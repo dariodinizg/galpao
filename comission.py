@@ -1,19 +1,7 @@
 from csvstats import DataCSV
 import csv
 from datetime import datetime
-
-
-def classificar_receitas(descritivo):
-    # Separa cada tipo de conta em uma lista específica
-    arte_cir = []
-    tx_prod = []
-    for elements in descritivo:
-        for income_types in elements:
-            if 'ARTE CIRC' in income_types:
-                arte_cir.append(income_types)
-            elif 'TAXA PROD' in income_types:
-                tx_prod.append(income_types)
-    return arte_cir, tx_prod
+import operator
 
 
 def fill_missing_fields(reference_field, *fields):
@@ -130,6 +118,7 @@ for idx in range(0, len(sacado)):
 # e split dos valores da lista usando "R$" como critério
 taxa_prod = select_income_type_by_str(matcher_instring, descritivo, 'prod', 'R$')
 adesao = select_income_type_by_str(matcher_instring, descritivo, 'ades', 'R$')
+multas = select_income_type_by_str(matcher_instring, descritivo, 'mult', 'R$')
 
 my_list = []
 for item in descritivo:
@@ -184,6 +173,19 @@ def tx_prod_organizer():
             valor_prod.append('')
 tx_prod_organizer()
 
+descr_mult = []
+valor_mult = []
+def multa_organizer():
+    global descr_mult, valor_mult
+    for idx in range(len(multas)):
+        descr_mult.append(multas[idx][0])
+        try:
+            valor_mult.append(multas[idx][1])
+        except IndexError:
+            valor_mult.append('')
+multa_organizer()
+
+
 # Tratamento de colunas literais
 def include_semturma(str_lista):
     values = str_lista
@@ -194,6 +196,7 @@ def include_semturma(str_lista):
 turmas = include_semturma(turmas)
 
 # Tratamento de colunas numéricas
+
 def negative_values():
     global descr_parcelas
     for idx4 in range(len(descr_parcelas)):
@@ -202,20 +205,23 @@ def negative_values():
             valor_parcelas[idx4] = f'-{valor_parcelas[idx4].lstrip()}'
 negative_values()
 
-def col_str2numbers(str_lista):
+def col_str2numbers(ref_lista):
+    str_lista = ref_lista.copy()
     # Tratamento para uso de funções de calculo
-    values = str_lista[:]
-    for idx in range(len(values)):
-        if values[idx] != '':
-            values[idx] = values[idx].strip()
-            values[idx] = values[idx].replace(',','.')
-            values[idx] = float(values[idx])
+    values = []
+    for idx in range(len(str_lista)):
+        str_lista[idx] = str_lista[idx].strip().lstrip().replace(',','.')
+        if str_lista[idx] != '':
+            str_lista[idx] = float(str_lista[idx])
+            values.append(str_lista[idx])
         else:
-            continue
-    return values
+            values.append(0)
+    return values.copy()
+
+calc_adesao = col_str2numbers(valor_adesao)
+calc_multa = col_str2numbers(valor_mult)
 calc_parcelas = col_str2numbers(valor_parcelas)
 calc_prod = col_str2numbers(valor_prod)
-calc_adesao = col_str2numbers(valor_adesao)
 
 def col_num2string(str_list, num_list):
     values = str_list
@@ -226,55 +232,82 @@ def col_num2string(str_list, num_list):
         else:
             continue
     return values
-valor_parcelas = col_num2string(valor_parcelas, calc_parcelas)
+
 
 # Classificação para atrasados
-def check_dates():
-    global valor_parcelas
-
-    parc_atrasadas = []
-    initial_date = '28/02'
-    initial_date = datetime.strptime(initial_date, '%d/%m')
-
-    data_credito = credito[:]
-    for idx in range(len(data_credito)):
-        data_credito[idx] = data_credito[idx].split('/')
-        data_credito[idx] = datetime.strptime(f'{data_credito[idx][0]}/{data_credito[idx][1]}', '%d/%m')
-
-    for idx in range(len(data_credito)):
-        if data_credito[idx] < initial_date:
-            parc_atrasadas.append(valor_parcelas[idx])
-            valor_parcelas[idx] = ''
-        else:
-            parc_atrasadas.append('')
-    return parc_atrasadas
-val_vencidos = check_dates()
+# def check_dates():
+#     global valor_parcelas
+#
+#     parc_atrasadas = []
+#     initial_date = '28/02'
+#     initial_date = datetime.strptime(initial_date, '%d/%m')
+#
+#     data_credito = credito[:]
+#     for idx in range(len(data_credito)):
+#         data_credito[idx] = data_credito[idx].split('/')
+#         data_credito[idx] = datetime.strptime(f'{data_credito[idx][0]}/{data_credito[idx][1]}', '%d/%m')
+#
+#     for idx in range(len(data_credito)):
+#         if data_credito[idx] < initial_date:
+#             parc_atrasadas.append(valor_parcelas[idx])
+#             valor_parcelas[idx] = ''
+#         else:
+#             parc_atrasadas.append('')
+#     return parc_atrasadas
+# val_vencidos = check_dates()
 
 
 # # Preparação de dados para escrita
-comission_tablerows = []
-#list(zip([turmas, sacado,parcelas[0], parcelas[1], credito]))
-for idx in range(len(sacado)):
-    if len(descr_parcelas[idx]) > 0:
-        comission_tablerows.append([turmas[idx], sacado[idx], descr_parcelas[idx], val_vencidos[idx], valor_parcelas[idx], descr_prod[idx], valor_prod[idx], credito[idx]])
-    else:
-        continue
+def merging_table():
+    values = []
+    for idx in range(len(sacado)):
+        valor_recebido = round(sum([calc_parcelas[idx], calc_adesao[idx], calc_multa[idx], calc_prod[idx]]),2)
+        valor_recebido_str = f'{valor_recebido}'.replace('.',',')
+        values.append([turmas[idx], sacado[idx], valor_recebido_str, valor_parcelas[idx], valor_mult[idx], valor_prod[idx], valor_adesao[idx], credito[idx]])
+    return sorted(values, key=operator.itemgetter(0,1))
+data_table = merging_table()
+
+
+def table_to_dictionary(key_list, val_list):
+    my_lista = sorted(list(set(key_list)))
+    table_dictionary = {}
+    for turma in my_lista:
+        values = []
+        table_dictionary[turma.rstrip().lstrip()] = None
+        for row in val_list:
+            if row[0] == turma:
+                values.append([row[1],row[2],row[3],row[4], row[5], row[6], row[7]])
+        table_dictionary[turma] = values[:]
+
+    return table_dictionary
+comission_dicto = table_to_dictionary(turmas, data_table)
+
+# with open('comission_output.csv', 'w') as csv_file:
+#     writer = csv.writer(csv_file, delimiter=';')
+#     checked_turmas = []
+#     row_numbers = 0
+#     for row in comission_tablerows:
+#         if len(checked_turmas) == 0:
+#             checked_turmas.append(row[0])
+#             writer.writerow([row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row_numbers])
+#             row_numbers += 1
+#         elif row[0] not in checked_turmas:
+#             checked_turmas.append(row[0])
+#             writer.writerow('')
+#             writer.writerow(['turma', 'sacado', 'classificação parcela', 'valor vencido(R$)', 'valor vigente(R$)', 'class_produção', 'valor prod','data_credito', 'line'])
+#             writer.writerow([row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row_numbers])
+#             row_numbers += 1
+#         else:
+#             writer.writerow([row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row_numbers])
+#             row_numbers += 1
 
 with open('comission_output.csv', 'w') as csv_file:
     writer = csv.writer(csv_file, delimiter=';')
-    checked_turmas = []
-    row_numbers = 0
-    for row in comission_tablerows:
-        if len(checked_turmas) == 0:
-            checked_turmas.append(row[0])
-            writer.writerow([row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row_numbers])
-            row_numbers += 1
-        elif row[0] not in checked_turmas:
-            checked_turmas.append(row[0])
-            writer.writerow('')
-            writer.writerow(['turma', 'sacado', 'classificação parcela', 'valor vencido(R$)', 'valor vigente(R$)', 'class_produção', 'valor prod','data_credito', 'line'])
-            writer.writerow([row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row_numbers])
-            row_numbers += 1
-        else:
-            writer.writerow([row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row_numbers])
-            row_numbers += 1
+    # [turmas[idx], sacado[idx], valor_recebido, descr_parcelas[idx], valor_parcelas[idx], descr_mult[idx],
+    #                valor_mult[idx], descr_prod[idx], valor_prod[idx], credito[idx]])
+    writer.writerow(['turma', 'sacado', 'valor_recebido', 'valor_parcelas', 'valor_multa', 'valor_prod', 'valor_adesao', 'credito'])
+    for key in sorted(comission_dicto.keys()):
+        for values in comission_dicto[key]:
+            writer.writerow([key,*values])
+        writer.writerow('')
+
