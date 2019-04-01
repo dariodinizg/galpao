@@ -145,13 +145,6 @@ calc_parcelas = data.col_str2numbers(valor_parcelas)
 calc_prod = data.col_str2numbers(valor_prod)
 calc_desco = data.col_str2numbers(valor_desc)
 
-# print(len(sacado))
-# print(len(descritivo))
-print(len(valor_parcelas))
-# print(len(valor_prod))
-# print(len(valor_multa))
-# print(len(valor_desc))
-# print(len(valor_adesao))
 
 def output_comission_table():
     tb_columns = (turma, titulos, venc, sacado, valor_parcelas, valor_prod, valor_multa, valor_desc, valor_adesao)
@@ -162,7 +155,6 @@ def output_comission_table():
         header = ['turma', 'titulo', 'vencimento', 'sacado', 'parcela mensal', 'taxa_prod', 'multa', 'desconto', 'adesao']
         writer.writerow(header)
         for row in mytable:
-            # print(row)
             writer.writerow([*row])
         writer.writerow([
             '', '', '', '',
