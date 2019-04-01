@@ -91,3 +91,16 @@ class DataCSV(object):
         for keys in unique_values:
             values_ocurrency[int(keys)] = source.count(keys)
         return values_ocurrency
+
+    def col_str2numbers(self,ref_lista):
+        str_lista = ref_lista.copy()
+        # Tratamento para uso de funções de calculo. Retorna uma cópia da lista fonte com números em float
+        values = []
+        for idx,_ in enumerate(str_lista):
+            str_lista[idx] = str_lista[idx].strip().replace(',', '.')
+            if str_lista[idx] != '':
+                str_lista[idx] = float(str_lista[idx])
+                values.append(str_lista[idx])
+            else:
+                values.append(0)
+        return values.copy()

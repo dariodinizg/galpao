@@ -205,23 +205,8 @@ def negative_values():
             valor_parcelas[idx4] = f'-{valor_parcelas[idx4].lstrip()}'
 negative_values()
 
-def col_str2numbers(ref_lista):
-    str_lista = ref_lista.copy()
-    # Tratamento para uso de funções de calculo
-    values = []
-    for idx in range(len(str_lista)):
-        str_lista[idx] = str_lista[idx].strip().lstrip().replace(',','.')
-        if str_lista[idx] != '':
-            str_lista[idx] = float(str_lista[idx])
-            values.append(str_lista[idx])
-        else:
-            values.append(0)
-    return values.copy()
 
-calc_adesao = col_str2numbers(valor_adesao)
-calc_multa = col_str2numbers(valor_mult)
-calc_parcelas = col_str2numbers(valor_parcelas)
-calc_prod = col_str2numbers(valor_prod)
+
 
 def col_num2string(str_list, num_list):
     values = str_list
