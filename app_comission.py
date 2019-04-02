@@ -177,56 +177,76 @@ output_income_table()
 
 
 def output_comission_table():
+
+    def val_cell(cell):
+        if cell is None or cell is [] or cell is '':
+            return '0,0'
+        else:
+            return cell
+
     tb_columns = (turma, titulos, venc, sacado, recebido, valor_parcelas, valor_prod, valor_multa, valor_desc, valor_adesao)
     mytable = [[turm, titul, venci, sacad, receb, parcel, produ, mult, desc, ades]
                for turm, titul, venci, sacad, receb, parcel, produ, mult, desc, ades in zip(*tb_columns)]
     with open('table_comission.csv', 'w') as exported_table:
         writer = csv.writer(exported_table, delimiter=';')
         header = ['turma', 'titulo', 'vencimento', 'sacado', 'recebido', 'parcela mensal', 'taxa_prod', 'multa', 'desconto', 'adesao']
+
         checked_turmas = []
-        turma_receb = []
-        turma_parc = []
-        turma_prod = []
-        turma_mult = []
-        turma_desc = []
-        turma_ades = []
-        for row in mytable:
+        # Listas para armazenar valores por turma
+        turma_receb = 0.0
+        turma_parc = 0.0
+        turma_prod = 0.0
+        turma_mult = 0.0
+        turma_desc = 0.0
+        turma_ades = 0.0
+        subtotal_turmas = None
+
+        for row in mytable: # Divisão de turmas
             if row[0] not in checked_turmas:
                 checked_turmas.append(row[0])
+                if turma_receb != 0.0:
+                    writer.writerow(subtotal_turmas)
+                    turma_receb = 0.0
+                    turma_parc = 0.0
+                    turma_prod = 0.0
+                    turma_mult = 0.0
+                    turma_desc = 0.0
+                    turma_ades = 0.0
+                    writer.writerow('')
                 writer.writerow(header)
 
+            # Linhas de cada turma
             if row[0] in checked_turmas:
                 writer.writerow([*row])
 
-            # turma_receb.append(row[4].replace(',','.'))
-            # turma_parc.append(row[5].replace(',','.'))
-            # turma_prod.append(row[6].replace(',','.'))
-            # turma_mult.append(row[7].replace(',','.'))
-            # turma_desc.append(row[8].replace(',','.'))
-            # turma_ades.append(row[9].replace(',','.'))
-            # print(turma_receb[0])
-            #
-            # writer.writerow(['', '','', 'Total',
-            # '{:.2f}'.format(sum(turma_receb)).replace('.',','),
-            # '{:.2f}'.format(sum(turma_parc)).replace('.',','),
-            # '{:.2f}'.format(sum(turma_prod)).replace('.',','),
-            # '{:.2f}'.format(sum(turma_mult)).replace('.',','),
-            # '{:.2f}'.format(sum(turma_desc)).replace('.',','),
-            # '{:.2f}'.format(sum(turma_ades)).replace('.',',')])
+                # Colunas para cálculo por turma
+                turma_receb += float(val_cell(row[4]).replace(',','.'))
+                turma_parc += float(val_cell(row[5]).replace(',','.'))
+                turma_prod += float(val_cell(row[6]).replace(',','.'))
+                turma_mult += float(val_cell(row[7]).replace(',','.'))
+                turma_desc += float(val_cell(row[8]).replace(',','.'))
+                turma_ades += float(val_cell(row[9]).replace(',','.'))
 
+            subtotal_turmas = ['', '', '', 'Subtotal',
+                         '{:.2f}'.format(turma_receb).replace('.', ','),
+                         '{:.2f}'.format(turma_parc).replace('.', ','),
+                         '{:.2f}'.format(turma_prod).replace('.', ','),
+                         '{:.2f}'.format(turma_mult).replace('.', ','),
+                         '{:.2f}'.format(turma_desc).replace('.', ','),
+                         '{:.2f}'.format(turma_ades).replace('.', ',')]
 
-        # soma_parcelas = sum(calc_parcelas)
-        # soma_prod = sum(calc_prod)
-        # soma_multa = sum(calc_multa)
-        # soma_desc = sum(calc_desco)
-        # soma_adesao = sum(calc_adesao)
-        # total = soma_parcelas + soma_adesao + soma_multa + soma_prod + soma_desc
-        # writer.writerow(['', '','', 'Total',
-        # '{:.2f}'.format(total).replace('.',','),
-        # '{:.2f}'.format(soma_parcelas).replace('.',','),
-        # '{:.2f}'.format(soma_prod).replace('.',','),
-        # '{:.2f}'.format(soma_multa).replace('.',','),
-        # '{:.2f}'.format(soma_desc).replace('.',','),
-        # '{:.2f}'.format(soma_adesao).replace('.',',')])
+        soma_parcelas = sum(calc_parcelas)
+        soma_prod = sum(calc_prod)
+        soma_multa = sum(calc_multa)
+        soma_desc = sum(calc_desco)
+        soma_adesao = sum(calc_adesao)
+        total = soma_parcelas + soma_adesao + soma_multa + soma_prod + soma_desc
+        writer.writerow(['', '','', 'Total',
+        '{:.2f}'.format(total).replace('.',','),
+        '{:.2f}'.format(soma_parcelas).replace('.',','),
+        '{:.2f}'.format(soma_prod).replace('.',','),
+        '{:.2f}'.format(soma_multa).replace('.',','),
+        '{:.2f}'.format(soma_desc).replace('.',','),
+        '{:.2f}'.format(soma_adesao).replace('.',',')])
 
 output_comission_table()
