@@ -3,7 +3,11 @@ from csvstats import DataCSV
 import csv
 
 
+<<<<<<< HEAD
 data = DataCSV('csv_data.csv')
+=======
+data = DataCSV('source.csv')
+>>>>>>> baca48ca4ba9decbaa5995e572ae78414477b412
 
 
 def string_formating(str_list):
@@ -17,8 +21,14 @@ def string_formating(str_list):
 
 # Import columns data into lists
 turma = data.access_column('turma')
+<<<<<<< HEAD
 titulos = data.access_column('titulos')
 sacado = data.access_column('sacado')
+=======
+titulos = data.access_column('titulo')
+sacado = data.access_column('sacado')
+recebido = data.access_column('recebido')
+>>>>>>> baca48ca4ba9decbaa5995e572ae78414477b412
 credito = data.access_column('credito')
 venc = data.access_column('vencimento')
 raw_descritivo = data.access_column('descritivo')
@@ -144,6 +154,7 @@ calc_multa = data.col_str2numbers(valor_multa)
 calc_parcelas = data.col_str2numbers(valor_parcelas)
 calc_prod = data.col_str2numbers(valor_prod)
 calc_desco = data.col_str2numbers(valor_desc)
+<<<<<<< HEAD
 
 
 def output_comission_table():
@@ -162,6 +173,34 @@ def output_comission_table():
             '{:.2f}'.format(sum(calc_prod)).replace('.',','),
             '{:.2f}'.format(sum(calc_multa)).replace('.',','),
             '{:.2f}'.format(sum(calc_adesao)).replace('.',',')])
+=======
+calc_receb = data.col_str2numbers(recebido)
+
+def output_comission_table():
+    tb_columns = (turma, titulos, venc, sacado, recebido, valor_parcelas, valor_prod, valor_multa, valor_desc, valor_adesao)
+    mytable = [[turm, titul, venci, sacad, receb, parcel, produ, mult, desc, ades]
+               for turm, titul, venci, sacad, receb, parcel, produ, mult, desc, ades in zip(*tb_columns)]
+    with open('table_incomes.csv', 'w') as exported_table:
+        writer = csv.writer(exported_table, delimiter=';')
+        header = ['turma', 'titulo', 'vencimento', 'sacado', 'recebido', 'parcela mensal', 'taxa_prod', 'multa', 'desconto', 'adesao']
+        writer.writerow(header)
+        for row in mytable:
+            writer.writerow([*row])
+
+        soma_parcelas = sum(calc_parcelas)
+        soma_prod = sum(calc_prod)
+        soma_multa = sum(calc_multa)
+        soma_desc = sum(calc_desco)
+        soma_adesao = sum(calc_adesao)
+        total = soma_parcelas + soma_adesao + soma_multa + soma_prod + soma_desc
+        writer.writerow(['', '','', 'Total',
+        '{:.2f}'.format(total).replace('.',','),
+        '{:.2f}'.format(soma_parcelas).replace('.',','),
+        '{:.2f}'.format(soma_prod).replace('.',','),
+        '{:.2f}'.format(soma_multa).replace('.',','),
+        '{:.2f}'.format(soma_desc).replace('.',','),
+        '{:.2f}'.format(soma_adesao).replace('.',',')])
+>>>>>>> baca48ca4ba9decbaa5995e572ae78414477b412
 
 output_comission_table()
 
