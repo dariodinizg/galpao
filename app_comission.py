@@ -177,6 +177,14 @@ output_income_table()
 
 def output_comission_table():
 
+<<<<<<< HEAD
+=======
+    def val_cell(cell):
+        if cell is None or cell is [] or cell is '':
+            return '0,0'
+        else:
+            return cell
+>>>>>>> b7c7314336c322c24d04f3b2e4b0b117a7e8bc1b
 
     tb_columns = (turma, titulos, venc, sacado, recebido, valor_parcelas, valor_prod, valor_multa, valor_desc, valor_adesao)
     mytable = [[turm, titul, venci, sacad, receb, parcel, produ, mult, desc, ades]
@@ -195,7 +203,10 @@ def output_comission_table():
         turma_ades = 0.0
         subtotal_turmas = None
 
+<<<<<<< HEAD
         idx = 0
+=======
+>>>>>>> b7c7314336c322c24d04f3b2e4b0b117a7e8bc1b
         for row in mytable: # Divisão de turmas
             if row[0] not in checked_turmas:
                 checked_turmas.append(row[0])
@@ -211,6 +222,7 @@ def output_comission_table():
                 writer.writerow(header)
 
             # Linhas de cada turma
+<<<<<<< HEAD
 
             if row[0] in checked_turmas:
                 writer.writerow([*row])
@@ -224,6 +236,18 @@ def output_comission_table():
             turma_desc += calc_desco[idx]
             turma_ades += calc_adesao[idx]
 
+=======
+            if row[0] in checked_turmas:
+                writer.writerow([*row])
+
+                # Colunas para cálculo por turma
+                turma_receb += float(val_cell(row[4]).replace(',','.'))
+                turma_parc += float(val_cell(row[5]).replace(',','.'))
+                turma_prod += float(val_cell(row[6]).replace(',','.'))
+                turma_mult += float(val_cell(row[7]).replace(',','.'))
+                turma_desc += float(val_cell(row[8]).replace(',','.'))
+                turma_ades += float(val_cell(row[9]).replace(',','.'))
+>>>>>>> b7c7314336c322c24d04f3b2e4b0b117a7e8bc1b
 
             subtotal_turmas = ['', '', '', 'Subtotal',
                          '{:.2f}'.format(turma_receb).replace('.', ','),
@@ -232,7 +256,10 @@ def output_comission_table():
                          '{:.2f}'.format(turma_mult).replace('.', ','),
                          '{:.2f}'.format(turma_desc).replace('.', ','),
                          '{:.2f}'.format(turma_ades).replace('.', ',')]
+<<<<<<< HEAD
             idx += 1
+=======
+>>>>>>> b7c7314336c322c24d04f3b2e4b0b117a7e8bc1b
 
         soma_parcelas = sum(calc_parcelas)
         soma_prod = sum(calc_prod)
@@ -248,4 +275,8 @@ def output_comission_table():
         '{:.2f}'.format(soma_desc).replace('.',','),
         '{:.2f}'.format(soma_adesao).replace('.',',')])
 
+<<<<<<< HEAD
 output_comission_table()
+=======
+output_comission_table()
+>>>>>>> b7c7314336c322c24d04f3b2e4b0b117a7e8bc1b
