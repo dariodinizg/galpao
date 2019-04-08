@@ -74,34 +74,6 @@ def matcher_instr(lista_str, match_str):
     return column
 
 
-def matcher_not_instr(lista_str, *matches_str):
-    # Itera uma lista separando, em outra lista, valores que NÃO cumpre com os critérios fornecidos.
-
-    def search_match(element, matchs):
-        invalid = []
-        for word in matchs:
-            if word.lower() in element.lower():
-                invalid.append(element)
-        return invalid
-
-    column = []
-    for line in lista_str:
-        invalidos = []
-        for elem in line:
-            invalidos = search_match(elem, matches_str)
-            if invalidos == []:
-                my_elem = elem
-                column.append(my_elem)
-
-        if len(line) == len(invalidos):
-            column.append('')
-
-            invalidos.clear()
-
-    return column
-
-
-
 def values_split(lista_str):
     classification = []
     values = []
@@ -116,6 +88,36 @@ def values_split(lista_str):
     return classification, values
 
 
+def check_valid(element, matchs):
+    for match in matchs:
+        if match.lower() in element.lower():
+            return 0
+        else:
+            return 1
+
+def matcher_not_instr(lista_str):
+    # Itera uma lista separando, em outra lista, valores que NÃO cumpre com os critérios fornecidos.
+    # 'ades', 'multa', 'prod', 'desc'
+    column = []
+    for line in lista_str:
+        valid_element = None
+        for element in line:
+            if 'ades' not in element.lower() \
+                    and 'prod' not in element.lower() \
+                    and 'mult' not in element.lower() \
+                    and 'desco' not in element.lower():
+                valid_element = element
+        if valid_element == None:
+            column.append('')
+        else:
+            column.append(valid_element)
+
+    return column
+
+
+parcelas = matcher_not_instr(descritivo)
+tipo_parcelas, valor_parcelas = values_split(parcelas)
+
 adesao = matcher_instr(descritivo, 'ades')
 tipo_adesao, valor_adesao = values_split(adesao)
 
@@ -124,9 +126,6 @@ tipo_multa, valor_multa = values_split(multas)
 
 producao = matcher_instr(descritivo, 'prod')
 tipo_prod, valor_prod = values_split(producao)
-
-parcelas = matcher_not_instr(descritivo, 'ades', 'multa', 'prod', 'desc')
-tipo_parcelas, valor_parcelas = values_split(parcelas)
 
 
 def negative_values(lista_descr, lista_vals):
@@ -173,16 +172,11 @@ def output_income_table():
         '{:.2f}'.format(soma_adesao).replace('.',',')])
 
 
-output_income_table()
+# output_income_table()
 
 
 def output_comission_table():
 
-    def val_cell(cell):
-        if cell is None or cell is [] or cell is '':
-            return '0,0'
-        else:
-            return cell
 
     tb_columns = (turma, titulos, venc, sacado, recebido, valor_parcelas, valor_prod, valor_multa, valor_desc, valor_adesao)
     mytable = [[turm, titul, venci, sacad, receb, parcel, produ, mult, desc, ades]
@@ -201,6 +195,7 @@ def output_comission_table():
         turma_ades = 0.0
         subtotal_turmas = None
 
+        idx = 0
         for row in mytable: # Divisão de turmas
             if row[0] not in checked_turmas:
                 checked_turmas.append(row[0])
@@ -216,16 +211,28 @@ def output_comission_table():
                 writer.writerow(header)
 
             # Linhas de cada turma
+
             if row[0] in checked_turmas:
                 writer.writerow([*row])
 
+
                 # Colunas para cálculo por turma
-                turma_receb += float(val_cell(row[4]).replace(',','.'))
-                turma_parc += float(val_cell(row[5]).replace(',','.'))
-                turma_prod += float(val_cell(row[6]).replace(',','.'))
-                turma_mult += float(val_cell(row[7]).replace(',','.'))
-                turma_desc += float(val_cell(row[8]).replace(',','.'))
-                turma_ades += float(val_cell(row[9]).replace(',','.'))
+            turma_receb += calc_receb[idx]
+            turma_parc += calc_parcelas[idx]
+            turma_prod += calc_prod[idx]
+            turma_mult += calc_multa[idx]
+            turma_desc += calc_desco[idx]
+            turma_ades += calc_adesao[idx]
+
+
+            #
+            #     # Colunas para cálculo por turma
+            #     turma_receb += val_cell(row[4])
+            #     turma_parc += val_cell(row[5])
+            #     turma_prod += val_cell(row[6])
+            #     turma_mult += val_cell(row[7])
+            #     turma_desc += val_cell(row[8])
+            #     turma_ades += val_cell(row[9])
 
             subtotal_turmas = ['', '', '', 'Subtotal',
                          '{:.2f}'.format(turma_receb).replace('.', ','),
@@ -234,6 +241,7 @@ def output_comission_table():
                          '{:.2f}'.format(turma_mult).replace('.', ','),
                          '{:.2f}'.format(turma_desc).replace('.', ','),
                          '{:.2f}'.format(turma_ades).replace('.', ',')]
+            idx += 1
 
         soma_parcelas = sum(calc_parcelas)
         soma_prod = sum(calc_prod)
