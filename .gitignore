@@ -1,0 +1,6 @@
+/datafiles
+/__pycache__
+/.idea
+table_comission.csv
+table_incomes.csv
+source.csv
