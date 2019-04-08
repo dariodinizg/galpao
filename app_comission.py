@@ -172,7 +172,7 @@ def output_income_table():
         '{:.2f}'.format(soma_adesao).replace('.',',')])
 
 
-# output_income_table()
+output_income_table()
 
 
 def output_comission_table():
@@ -224,15 +224,6 @@ def output_comission_table():
             turma_desc += calc_desco[idx]
             turma_ades += calc_adesao[idx]
 
-
-            #
-            #     # Colunas para cálculo por turma
-            #     turma_receb += val_cell(row[4])
-            #     turma_parc += val_cell(row[5])
-            #     turma_prod += val_cell(row[6])
-            #     turma_mult += val_cell(row[7])
-            #     turma_desc += val_cell(row[8])
-            #     turma_ades += val_cell(row[9])
 
             subtotal_turmas = ['', '', '', 'Subtotal',
                          '{:.2f}'.format(turma_receb).replace('.', ','),
