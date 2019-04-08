@@ -1,4 +1,3 @@
-import operator
 from csvstats import DataCSV
 import csv
 
@@ -30,12 +29,15 @@ sacado = string_formating(sacado)
 credito = string_formating(credito)
 raw_descritivo = string_formating(raw_descritivo)
 
+
 def include_semturma(lista_str):
     for idx, val in enumerate(lista_str):
         if lista_str[idx] == '':
             lista_str[idx] = 'sem turma'
 
+
 include_semturma(turma)
+
 
 # Table lines
 def separate_lines(column_str, criteria):
@@ -95,6 +97,7 @@ def check_valid(element, matchs):
         else:
             return 1
 
+
 def matcher_not_instr(lista_str):
     # Itera uma lista separando, em outra lista, valores que NÃO cumpre com os critérios fornecidos.
     # 'ades', 'multa', 'prod', 'desc'
@@ -107,7 +110,7 @@ def matcher_not_instr(lista_str):
                     and 'mult' not in element.lower() \
                     and 'desco' not in element.lower():
                 valid_element = element
-        if valid_element == None:
+        if valid_element is None:
             column.append('')
         else:
             column.append(valid_element)
@@ -133,6 +136,7 @@ def negative_values(lista_descr, lista_vals):
         if 'descon' in item[0].lower():
             lista_vals[idx] = f'-{lista_vals[idx].lstrip()}'
 
+
 desconto = matcher_instr(descritivo, 'desc')
 tipo_desc, valor_desc = values_split(desconto)
 
@@ -146,13 +150,16 @@ calc_prod = data.col_str2numbers(valor_prod)
 calc_desco = data.col_str2numbers(valor_desc)
 calc_receb = data.col_str2numbers(recebido)
 
+
 def output_income_table():
-    tb_columns = (turma, titulos, venc, sacado, recebido, valor_parcelas, valor_prod, valor_multa, valor_desc, valor_adesao)
+    tb_columns = (turma, titulos, venc, sacado, recebido, valor_parcelas,
+                  valor_prod, valor_multa, valor_desc, valor_adesao)
     mytable = [[turm, titul, venci, sacad, receb, parcel, produ, mult, desc, ades]
                for turm, titul, venci, sacad, receb, parcel, produ, mult, desc, ades in zip(*tb_columns)]
     with open('table_incomes.csv', 'w') as exported_table:
         writer = csv.writer(exported_table, delimiter=';')
-        header = ['turma', 'titulo', 'vencimento', 'sacado', 'recebido', 'parcela mensal', 'taxa_prod', 'multa', 'desconto', 'adesao']
+        header = ['turma', 'titulo', 'vencimento', 'sacado', 'recebido', 'parcela mensal',
+                  'taxa_prod', 'multa', 'desconto', 'adesao']
         writer.writerow(header)
         for row in mytable:
             writer.writerow([*row])
@@ -163,13 +170,13 @@ def output_income_table():
         soma_desc = sum(calc_desco)
         soma_adesao = sum(calc_adesao)
         total = soma_parcelas + soma_adesao + soma_multa + soma_prod + soma_desc
-        writer.writerow(['', '','', 'Total',
-        '{:.2f}'.format(total).replace('.',','),
-        '{:.2f}'.format(soma_parcelas).replace('.',','),
-        '{:.2f}'.format(soma_prod).replace('.',','),
-        '{:.2f}'.format(soma_multa).replace('.',','),
-        '{:.2f}'.format(soma_desc).replace('.',','),
-        '{:.2f}'.format(soma_adesao).replace('.',',')])
+        writer.writerow(['', '', '', 'Total',
+                        '{:.2f}'.format(total).replace('.', ','),
+                        '{:.2f}'.format(soma_parcelas).replace('.', ','),
+                        '{:.2f}'.format(soma_prod).replace('.', ','),
+                        '{:.2f}'.format(soma_multa).replace('.', ','),
+                        '{:.2f}'.format(soma_desc).replace('.', ','),
+                        '{:.2f}'.format(soma_adesao).replace('.', ',')])
 
 
 output_income_table()
@@ -177,13 +184,14 @@ output_income_table()
 
 def output_comission_table():
 
-
-    tb_columns = (turma, titulos, venc, sacado, recebido, valor_parcelas, valor_prod, valor_multa, valor_desc, valor_adesao)
+    tb_columns = (turma, titulos, venc, sacado, recebido, valor_parcelas,
+                  valor_prod, valor_multa, valor_desc, valor_adesao)
     mytable = [[turm, titul, venci, sacad, receb, parcel, produ, mult, desc, ades]
                for turm, titul, venci, sacad, receb, parcel, produ, mult, desc, ades in zip(*tb_columns)]
     with open('table_comission.csv', 'w') as exported_table:
         writer = csv.writer(exported_table, delimiter=';')
-        header = ['turma', 'titulo', 'vencimento', 'sacado', 'recebido', 'parcela mensal', 'taxa_prod', 'multa', 'desconto', 'adesao']
+        header = ['turma', 'titulo', 'vencimento', 'sacado', 'recebido', 'parcela mensal',
+                  'taxa_prod', 'multa', 'desconto', 'adesao']
 
         checked_turmas = []
         # Listas para armazenar valores por turma
@@ -197,8 +205,7 @@ def output_comission_table():
 
         idx = 0
 
-
-        for row in mytable: # Divisão de turmas
+        for row in mytable:  # Divisão de turmas
             if row[0] not in checked_turmas:
                 checked_turmas.append(row[0])
                 if turma_receb != 0.0:
@@ -217,8 +224,7 @@ def output_comission_table():
             if row[0] in checked_turmas:
                 writer.writerow([*row])
 
-
-                # Colunas para cálculo por turma
+            # Colunas para cálculo por turma
             turma_receb += calc_receb[idx]
             turma_parc += calc_parcelas[idx]
             turma_prod += calc_prod[idx]
@@ -228,15 +234,14 @@ def output_comission_table():
 
 
             subtotal_turmas = ['', '', '', 'Subtotal',
-                         '{:.2f}'.format(turma_receb).replace('.', ','),
-                         '{:.2f}'.format(turma_parc).replace('.', ','),
-                         '{:.2f}'.format(turma_prod).replace('.', ','),
-                         '{:.2f}'.format(turma_mult).replace('.', ','),
-                         '{:.2f}'.format(turma_desc).replace('.', ','),
-                         '{:.2f}'.format(turma_ades).replace('.', ',')]
+                             '{:.2f}'.format(turma_receb).replace('.', ','),
+                             '{:.2f}'.format(turma_parc).replace('.', ','),
+                             '{:.2f}'.format(turma_prod).replace('.', ','),
+                             '{:.2f}'.format(turma_mult).replace('.', ','),
+                             '{:.2f}'.format(turma_desc).replace('.', ','),
+                             '{:.2f}'.format(turma_ades).replace('.', ',')]
 
             idx += 1
-
 
         soma_parcelas = sum(calc_parcelas)
         soma_prod = sum(calc_prod)
@@ -244,14 +249,13 @@ def output_comission_table():
         soma_desc = sum(calc_desco)
         soma_adesao = sum(calc_adesao)
         total = soma_parcelas + soma_adesao + soma_multa + soma_prod + soma_desc
-        writer.writerow(['', '','', 'Total',
-        '{:.2f}'.format(total).replace('.',','),
-        '{:.2f}'.format(soma_parcelas).replace('.',','),
-        '{:.2f}'.format(soma_prod).replace('.',','),
-        '{:.2f}'.format(soma_multa).replace('.',','),
-        '{:.2f}'.format(soma_desc).replace('.',','),
-        '{:.2f}'.format(soma_adesao).replace('.',',')])
+        writer.writerow(['', '', '', 'Total',
+        '{:.2f}'.format(total).replace('.', ','),
+        '{:.2f}'.format(soma_parcelas).replace('.', ','),
+        '{:.2f}'.format(soma_prod).replace('.', ','),
+        '{:.2f}'.format(soma_multa).replace('.', ','),
+        '{:.2f}'.format(soma_desc).replace('.', ','),
+        '{:.2f}'.format(soma_adesao).replace('.', ',')])
 
 
 output_comission_table()
-
