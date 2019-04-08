@@ -98,6 +98,8 @@ class DataCSV(object):
         values = []
         for idx,_ in enumerate(str_lista):
             str_lista[idx] = str_lista[idx].strip().replace(',', '.')
+            if str_lista[idx].count('.') == 2:
+                str_lista[idx] = str_lista[idx].replace('.','',(str_lista[idx].count('.') - 1))
             if str_lista[idx] != '':
                 str_lista[idx] = float(str_lista[idx])
                 values.append(str_lista[idx])
