@@ -1,8 +1,8 @@
 from csvstats import DataCSV
 import csv
 
-
-data = DataCSV('source.csv')
+filename = input('Insira o nome e extensão do arquivo csv que deseja abrir: ')
+data = DataCSV(filename)
 
 
 def string_formating(str_list):
