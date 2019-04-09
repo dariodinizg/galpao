@@ -1,11 +1,14 @@
 from csvstats import DataCSV
 import csv
 
-filename = input('Insira o nome e extensão do arquivo csv que deseja abrir: ')
-data = DataCSV(filename)
+
+def include_semturma(lista_str):
+    for idx, val in enumerate(lista_str):
+        if lista_str[idx] == '':
+            lista_str[idx] = 'sem turma'
 
 
-def string_formating(str_list):
+def string_strip(str_list):
     values = []
     for idx in range(len(str_list)):
         str_list[idx] = str_list[idx].lstrip()
@@ -14,32 +17,6 @@ def string_formating(str_list):
     return values
 
 
-# Import columns data into lists
-turma = data.access_column('turma')
-titulos = data.access_column('titulo')
-sacado = data.access_column('sacado')
-recebido = data.access_column('recebido')
-credito = data.access_column('credito')
-venc = data.access_column('vencimento')
-raw_descritivo = data.access_column('descritivo')
-
-# Raw data treatment
-turma = string_formating(turma)
-sacado = string_formating(sacado)
-credito = string_formating(credito)
-raw_descritivo = string_formating(raw_descritivo)
-
-
-def include_semturma(lista_str):
-    for idx, val in enumerate(lista_str):
-        if lista_str[idx] == '':
-            lista_str[idx] = 'sem turma'
-
-
-include_semturma(turma)
-
-
-# Table lines
 def separate_lines(column_str, criteria):
     # Tratando informações do descritivo para separar diferentes classificações.
     values = column_str[:]
@@ -47,9 +24,6 @@ def separate_lines(column_str, criteria):
         # Remove espaços desnecessários que geram linhas vazias e separa as classificações de contas
         values[idx] = values[idx].split(criteria)
     return values
-
-
-descritivo = separate_lines(raw_descritivo, '\n')
 
 
 def matcher_instr(lista_str, match_str):
@@ -118,40 +92,15 @@ def matcher_not_instr(lista_str):
     return column
 
 
-parcelas = matcher_not_instr(descritivo)
-tipo_parcelas, valor_parcelas = values_split(parcelas)
-
-adesao = matcher_instr(descritivo, 'ades')
-tipo_adesao, valor_adesao = values_split(adesao)
-
-multas = matcher_instr(descritivo, 'mult')
-tipo_multa, valor_multa = values_split(multas)
-
-producao = matcher_instr(descritivo, 'prod')
-tipo_prod, valor_prod = values_split(producao)
-
-
 def negative_values(lista_descr, lista_vals):
     for idx, item in enumerate(zip(lista_descr, lista_vals)):
         if 'descon' in item[0].lower():
             lista_vals[idx] = f'-{lista_vals[idx].lstrip()}'
 
 
-desconto = matcher_instr(descritivo, 'desc')
-tipo_desc, valor_desc = values_split(desconto)
-
-negative_values(tipo_desc, valor_desc)
-
-# Conversão em float para realização de cálculos
-calc_adesao = data.col_str2numbers(valor_adesao)
-calc_multa = data.col_str2numbers(valor_multa)
-calc_parcelas = data.col_str2numbers(valor_parcelas)
-calc_prod = data.col_str2numbers(valor_prod)
-calc_desco = data.col_str2numbers(valor_desc)
-calc_receb = data.col_str2numbers(recebido)
-
-
 def output_income_table():
+    # Exporta uma tabela com todas as informações classificadas em colunas separadas e um total na ultima linha
+
     tb_columns = (turma, titulos, venc, sacado, recebido, valor_parcelas,
                   valor_prod, valor_multa, valor_desc, valor_adesao)
     mytable = [[turm, titul, venci, sacad, receb, parcel, produ, mult, desc, ades]
@@ -171,18 +120,16 @@ def output_income_table():
         soma_adesao = sum(calc_adesao)
         total = soma_parcelas + soma_adesao + soma_multa + soma_prod + soma_desc
         writer.writerow(['', '', '', 'Total',
-                        '{:.2f}'.format(total).replace('.', ','),
-                        '{:.2f}'.format(soma_parcelas).replace('.', ','),
-                        '{:.2f}'.format(soma_prod).replace('.', ','),
-                        '{:.2f}'.format(soma_multa).replace('.', ','),
-                        '{:.2f}'.format(soma_desc).replace('.', ','),
-                        '{:.2f}'.format(soma_adesao).replace('.', ',')])
-
-
-output_income_table()
+                         '{:.2f}'.format(total).replace('.', ','),
+                         '{:.2f}'.format(soma_parcelas).replace('.', ','),
+                         '{:.2f}'.format(soma_prod).replace('.', ','),
+                         '{:.2f}'.format(soma_multa).replace('.', ','),
+                         '{:.2f}'.format(soma_desc).replace('.', ','),
+                         '{:.2f}'.format(soma_adesao).replace('.', ',')])
 
 
 def output_comission_table():
+    # Exporta uma tabela com os valores separados por turma para uso no comissionamento dos valores
 
     tb_columns = (turma, titulos, venc, sacado, recebido, valor_parcelas,
                   valor_prod, valor_multa, valor_desc, valor_adesao)
@@ -232,14 +179,13 @@ def output_comission_table():
             turma_desc += calc_desco[idx]
             turma_ades += calc_adesao[idx]
 
-
             subtotal_turmas = ['', '', '', 'Subtotal',
-                             '{:.2f}'.format(turma_receb).replace('.', ','),
-                             '{:.2f}'.format(turma_parc).replace('.', ','),
-                             '{:.2f}'.format(turma_prod).replace('.', ','),
-                             '{:.2f}'.format(turma_mult).replace('.', ','),
-                             '{:.2f}'.format(turma_desc).replace('.', ','),
-                             '{:.2f}'.format(turma_ades).replace('.', ',')]
+                               '{:.2f}'.format(turma_receb).replace('.', ','),
+                               '{:.2f}'.format(turma_parc).replace('.', ','),
+                               '{:.2f}'.format(turma_prod).replace('.', ','),
+                               '{:.2f}'.format(turma_mult).replace('.', ','),
+                               '{:.2f}'.format(turma_desc).replace('.', ','),
+                               '{:.2f}'.format(turma_ades).replace('.', ',')]
 
             idx += 1
 
@@ -250,12 +196,65 @@ def output_comission_table():
         soma_adesao = sum(calc_adesao)
         total = soma_parcelas + soma_adesao + soma_multa + soma_prod + soma_desc
         writer.writerow(['', '', '', 'Total',
-        '{:.2f}'.format(total).replace('.', ','),
-        '{:.2f}'.format(soma_parcelas).replace('.', ','),
-        '{:.2f}'.format(soma_prod).replace('.', ','),
-        '{:.2f}'.format(soma_multa).replace('.', ','),
-        '{:.2f}'.format(soma_desc).replace('.', ','),
-        '{:.2f}'.format(soma_adesao).replace('.', ',')])
+                         '{:.2f}'.format(total).replace('.', ','),
+                         '{:.2f}'.format(soma_parcelas).replace('.', ','),
+                         '{:.2f}'.format(soma_prod).replace('.', ','),
+                         '{:.2f}'.format(soma_multa).replace('.', ','),
+                         '{:.2f}'.format(soma_desc).replace('.', ','),
+                         '{:.2f}'.format(soma_adesao).replace('.', ',')])
 
 
+filename = input("\033[36m"'Insira o nome e extensão do arquivo csv que deseja abrir: ')
+# start_date = input("\033[36m""Insira a data de inicio do filtro de comissionamento, ano/mês/dia - AAAA/MM/DD: ")
+# end_date = input("\033[36m""Insira a data de fim do filtro de comissionamento, ano/mês/dia - AAAA/MM/DD: ")
+data = DataCSV(filename)
+
+# Import columns data into lists
+turma = data.access_column('turma')
+titulos = data.access_column('titulo')
+sacado = data.access_column('sacado')
+recebido = data.access_column('recebido')
+credito = data.access_column('credito')
+venc = data.access_column('vencimento')
+raw_descritivo = data.access_column('descritivo')
+
+# TRATAMENTO DE INFORMAÇÕES
+
+# Redução de espaços excedentes
+turma = string_strip(turma)
+include_semturma(turma)
+sacado = string_strip(sacado)
+credito = string_strip(credito)
+raw_descritivo = string_strip(raw_descritivo)
+
+# Separação de linhas em elementos de uma lista
+descritivo = separate_lines(raw_descritivo, '\n')
+
+# Separação dos elementos da lista descritivo em colunas únicas
+parcelas = matcher_not_instr(descritivo)
+adesao = matcher_instr(descritivo, 'ades')
+multas = matcher_instr(descritivo, 'mult')
+producao = matcher_instr(descritivo, 'prod')
+desconto = matcher_instr(descritivo, 'desc')
+
+# Separação entre identificação da conta e o valor da conta
+tipo_adesao, valor_adesao = values_split(adesao)
+tipo_parcelas, valor_parcelas = values_split(parcelas)
+tipo_multa, valor_multa = values_split(multas)
+tipo_prod, valor_prod = values_split(producao)
+tipo_desc, valor_desc = values_split(desconto)
+
+# Inclusão de sinal negativo para identificação "desconto"
+negative_values(tipo_desc, valor_desc)
+
+# Conversão em float para realização de cálculos
+calc_adesao = data.col_str2numbers(valor_adesao)
+calc_multa = data.col_str2numbers(valor_multa)
+calc_parcelas = data.col_str2numbers(valor_parcelas)
+calc_prod = data.col_str2numbers(valor_prod)
+calc_desco = data.col_str2numbers(valor_desc)
+calc_receb = data.col_str2numbers(recebido)
+
+output_income_table()
 output_comission_table()
+
