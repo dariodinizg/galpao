@@ -12,8 +12,7 @@ def include_semturma(lista_str: list):
 def string_strip(str_list: list) -> list:
     values = []
     for idx in range(len(str_list)):
-        str_list[idx] = str_list[idx].lstrip()
-        str_list[idx] = str_list[idx].rstrip()
+        str_list[idx] = str_list[idx].strip()
         values.append(str_list[idx])
     return values
 
@@ -246,6 +245,89 @@ def output_comission_table():
         writer.writerow([output_date()])
 
 
+def output_comission_table2():
+    # Exporta uma tabela com os valores separados por turma para uso no comissionamento dos valores
+
+    tb_columns = (turma, titulos, venc, sacado, val_pgtos, valor_parcelas,
+                  valor_multa, valor_desc, credito)
+    mytable = [[turm, titul, venci, sacad, val_pgto, parcel, mult, desc, cred]
+               for turm, titul, venci, sacad, val_pgto, parcel,mult, desc, cred
+               in zip(*tb_columns)]
+    with open('table_comission2.csv', 'w') as exported_table:
+        writer = csv.writer(exported_table, delimiter=';')
+        header = ['TURMA', 'TITULO', 'VENCIMENTO', 'SACADO', 'VIGENCIA', 'VAL_PARCELA',
+                  'VAL_MULTA', 'VAL_DESCONTO', 'DATA_CREDITO']
+
+        checked_turmas = []
+        # Listas para armazenar valores por turma
+        turma_receb = 0.0
+        turma_parc = 0.0
+        turma_prod = 0.0
+        turma_mult = 0.0
+        turma_desc = 0.0
+        turma_ades = 0.0
+        subtotal_previsto = None
+        subtotal_realizado = None
+
+        idx = 0
+
+        for row in mytable:  # Divisão de turmas
+            if row[0] not in checked_turmas:
+                checked_turmas.append(row[0])
+                if turma_receb != 0.0:
+                    # writer.writerow(subtotal_previsto)
+                    writer.writerow(subtotal_realizado)
+                    turma_receb = 0.0
+                    turma_parc = 0.0
+                    turma_prod = 0.0
+                    turma_mult = 0.0
+                    turma_desc = 0.0
+                    turma_ades = 0.0
+                    writer.writerow('')
+                writer.writerow([f'Periodo de comissão: {data_inicial} a {data_final}'])
+                writer.writerow(header)
+
+            # Linhas de cada turma
+
+            if row[0] in checked_turmas:
+                writer.writerow([*row])
+
+            # Colunas para cálculo por turma
+            turma_receb += calc_receb[idx]
+            turma_parc += calc_parcelas[idx]
+            turma_prod += calc_prod[idx]
+            turma_mult += calc_multa[idx]
+            turma_desc += calc_desco[idx]
+            turma_ades += calc_adesao[idx]
+
+            # subtotal_previsto = ['', '','', '', 'SUBTOTAL PREVISTO',
+            #                      '{:.2f}'.format(turma_receb).replace('.', ','),
+            #                      '{:.2f}'.format(turma_parc).replace('.', ','),
+            #                      '{:.2f}'.format(turma_prod).replace('.', ','),
+            #                      '{:.2f}'.format(turma_mult).replace('.', ','),
+            #                      '{:.2f}'.format(turma_desc).replace('.', ','),
+            #                      '{:.2f}'.format(turma_ades).replace('.', ',')]
+
+            subtotal_realizado = ['','', '', '', 'VALOR PARA COMISSAO',
+                                  '{:.2f}'.format(turma_parc + turma_desc).replace('.', ',')]
+
+            idx += 1
+
+        soma_parcelas = sum(calc_parcelas)
+        soma_prod = sum(calc_prod)
+        soma_multa = sum(calc_multa)
+        soma_desc = sum(calc_desco)
+        soma_adesao = sum(calc_adesao)
+        total = soma_parcelas + soma_adesao + soma_multa + soma_prod + soma_desc
+        writer.writerow(['', '', '', 'TOTAL',
+                         '{:.2f}'.format(total).replace('.', ','),
+                         '{:.2f}'.format(soma_parcelas).replace('.', ','),
+                         '{:.2f}'.format(soma_prod).replace('.', ','),
+                         '{:.2f}'.format(soma_multa).replace('.', ','),
+                         '{:.2f}'.format(soma_desc).replace('.', ','),
+                         '{:.2f}'.format(soma_adesao).replace('.', ',')])
+        writer.writerow([output_date()])
+
 # filename = input("\033[36m"'Insira o nome e extensão do arquivo csv que deseja abrir: ')
 # start_date = input("\033[36m""Insira a data de inicio do filtro de comissionamento, ano/mês/dia - AAAA/MM/DD: ")
 # end_date = input("\033[36m""Insira a data de fim do filtro de comissionamento, ano/mês/dia - AAAA/MM/DD: ")
@@ -304,5 +386,8 @@ data_inicial = '28/02/2019'
 data_final = '28/03/2019'
 val_pgtos = payment_validity(venc, data_inicial, data_final)
 
-output_income_table()
-output_comission_table()
+
+if __name__ == '__main__':
+    output_income_table()
+    output_comission_table()
+    # output_comission_table2()
