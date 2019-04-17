@@ -1,141 +1,29 @@
 from csvstats import DataCSV
 import csv
-from datetime import *
+import reader as rd
+from tkinter import *
+from tkinter import filedialog
+from os import getcwd
 
 
-def include_semturma(lista_str: list):
-    for idx, val in enumerate(lista_str):
-        if lista_str[idx] == '':
-            lista_str[idx] = 'sem turma'
 
+def output_income_table(start_date, end_date):
+    my_table_columns, my_calc_columns = data_modeling()
 
-def string_strip(str_list: list) -> list:
-    values = []
-    for idx in range(len(str_list)):
-        str_list[idx] = str_list[idx].strip()
-        values.append(str_list[idx])
-    return values
+    calc_parcelas = my_calc_columns['parcelas']
+    calc_prod = my_calc_columns['producao']
+    calc_multa = my_calc_columns['multas']
+    calc_desco = my_calc_columns['descontos']
+    calc_adesao = my_calc_columns['adesao']
 
-
-def separate_lines(column_str, criteria: str) -> list:
-    # Tratando informações do descritivo para separar diferentes classificações.
-    values = column_str[:]
-    for idx in range(len(values)):
-        # Remove espaços desnecessários que geram linhas vazias e separa as classificações de contas
-        values[idx] = values[idx].split(criteria)
-    return values
-
-
-def matcher_instr(lista_str: list, match_str: str) -> list:
-    # Uso -> Separação dos valores de adesao, multas e produção
-    # Para uma lista de dois níveis, busca pela match_str em cada elemento do segundo nível e adiciona a lista
-    # 'columns'.
-    # Caso não encontre nenhum match para a linha, retorna zero para manter o pareamento com as outras colunas.
-
-    column = []
-    for line in lista_str:
-        false_checks = []
-        my_item = ''
-        for element in line:
-            if match_str.lower() in element.lower():
-                my_item = element
-            else:
-                false_checks.append(0)
-
-            if len(false_checks) == len(line):
-                my_item = ''
-
-        column.append(my_item)
-
-    return column
-
-
-def values_split(lista_str: list) -> (list, list):
-    classification = []
-    values = []
-    for idx, val in enumerate(lista_str):
-        if len(lista_str[idx]) > 0:
-            lista_str[idx] = val.split('R$')
-            classification.append(lista_str[idx][0].strip())
-            values.append(lista_str[idx][1].strip())
-        else:
-            classification.append('')
-            values.append('')
-    return classification, values
-
-
-def check_valid(element, matchs: str) -> int:
-    for match in matchs:
-        if match.lower() in element.lower():
-            return 0
-        else:
-            return 1
-
-
-def matcher_not_instr(lista_str: list):
-    # Itera uma lista separando, em outra lista, valores que NÃO cumpre com os critérios fornecidos.
-    # 'ades', 'multa', 'prod', 'desc'
-    column = []
-    for line in lista_str:
-        valid_element = None
-        for element in line:
-            if 'ades' not in element.lower() \
-                    and 'prod' not in element.lower() \
-                    and 'mult' not in element.lower() \
-                    and 'desco' not in element.lower():
-                valid_element = element
-        if valid_element is None:
-            column.append('')
-        else:
-            column.append(valid_element)
-
-    return column
-
-
-def output_date():
-    # Retorna o dia e o horário em que o programa gerou o output
-    now_time = datetime.now().strftime('%d/%m/%Y às %H:%M')
-
-    return f'Emissão do relatório: {now_time}'
-
-
-def payment_validity(col_dates: list, first_date: str, last_date: str) -> list:
-    # Retorna P - passado, V - vigente e F - futuro.
-    validity = []
-    start_date = datetime.strptime(first_date, '%d/%m/%Y')
-    end_date = datetime.strptime(last_date, '%d/%m/%Y')
-
-    for my_date in col_dates:
-        date_obj = datetime.strptime(my_date, '%d/%m/%Y')
-        if date_obj < start_date:
-            validity.append('atrasado')
-        elif date_obj > end_date:
-            validity.append('antecipado')
-        else:
-            validity.append('...')
-
-    return validity
-
-
-def negative_values(lista_descr, lista_vals):
-    for idx, item in enumerate(zip(lista_descr, lista_vals)):
-        if 'descon' in item[0].lower():
-            lista_vals[idx] = f'-{lista_vals[idx].lstrip()}'
-
-
-def output_income_table():
-    # Exporta uma tabela com todas as informações classificadas em colunas separadas e um total na ultima linha
-
-    tb_columns = (turma, titulos, venc, sacado, val_pgtos, recebido, valor_parcelas,
-                  valor_prod, valor_multa, valor_desc, valor_adesao, credito)
     mytable = [[turm, titul, venci, sacad, val_pgto, receb, parcel, produ, mult, desc, ades, cred]
                for turm, titul, venci, sacad, val_pgto, receb, parcel, produ, mult, desc, ades, cred
-               in zip(*tb_columns)]
+               in zip(*my_table_columns)]
     with open('table_incomes.csv', 'w') as exported_table:
         writer = csv.writer(exported_table, delimiter=';')
         header = ['TURMA', 'TITULO', 'VENCIMENTO', 'SACADO', 'VIGENCIA_DO_PGTO','VAL_RECEBIDO', 'VAL_PARCELA',
-                  'VAL_PRODUCAO', 'VAL_MULTA', 'VAL_DESCONTO', 'VAL_ADESAO', 'DATA_CREDITO']
-        writer.writerow([f'Periodo de comissão: {data_inicial} a {data_final}'])
+                    'VAL_PRODUCAO', 'VAL_MULTA', 'VAL_DESCONTO', 'VAL_ADESAO', 'DATA_CREDITO']
+        writer.writerow([f'Periodo de comissão: {start_date} a {end_date}'])
         writer.writerow(header)
         for row in mytable:
             writer.writerow([*row])
@@ -149,58 +37,66 @@ def output_income_table():
 
         total = soma_parcelas + soma_adesao + soma_multa + soma_prod + soma_desc
         writer.writerow(['', '', '','', 'TOTAL PREVISTO',
-                         '{:.2f}'.format(total).replace('.', ','),
-                         '{:.2f}'.format(val_comissao).replace('.', ','),
-                         '{:.2f}'.format(soma_prod).replace('.', ','),
-                         '{:.2f}'.format(soma_multa).replace('.', ','),
-                         '{:.2f}'.format(soma_desc).replace('.', ','),
-                         '{:.2f}'.format(soma_adesao).replace('.', ',')])
+                            '{:.2f}'.format(total).replace('.', ','),
+                            '{:.2f}'.format(val_comissao).replace('.', ','),
+                            '{:.2f}'.format(soma_prod).replace('.', ','),
+                            '{:.2f}'.format(soma_multa).replace('.', ','),
+                            '{:.2f}'.format(soma_desc).replace('.', ','),
+                            '{:.2f}'.format(soma_adesao).replace('.', ',')])
         writer.writerow(['', '', '','', 'TOTAL REALIZADO (- descontos)',
-                         '{:.2f}'.format(total).replace('.', ','),
-                         '{:.2f}'.format(val_comissao + soma_desc).replace('.', ',')])
-        writer.writerow([output_date()])
+                            '{:.2f}'.format(total).replace('.', ','),
+                            '{:.2f}'.format(val_comissao + soma_desc).replace('.', ',')])
+        writer.writerow([rd.output_date()])
 
 
-def output_comission_table():
+def output_comission_table(start_date, end_date):
     # Exporta uma tabela com os valores separados por turma para uso no comissionamento dos valores
 
-    tb_columns = (turma, titulos, venc, sacado, val_pgtos, recebido, valor_parcelas,
-                  valor_prod, valor_multa, valor_desc, valor_adesao, credito)
+    my_table_columns, my_calc_columns = data_modeling()
+
+    calc_receb = my_calc_columns['recebidos']
+    calc_parcelas = my_calc_columns['parcelas']
+    calc_prod = my_calc_columns['producao']
+    calc_multa = my_calc_columns['multas']
+    calc_desco = my_calc_columns['descontos']
+    calc_adesao = my_calc_columns['adesao']
+
     mytable = [[turm, titul, venci, sacad, val_pgto, receb, parcel, produ, mult, desc, ades, cred]
-               for turm, titul, venci, sacad, val_pgto, receb, parcel, produ, mult, desc, ades, cred
-               in zip(*tb_columns)]
+                for turm, titul, venci, sacad, val_pgto, receb, parcel, produ, mult, desc, ades, cred
+                in zip(*my_table_columns)]
+
     with open('table_comission.csv', 'w') as exported_table:
         writer = csv.writer(exported_table, delimiter=';')
         header = ['TURMA', 'TITULO', 'VENCIMENTO', 'SACADO', 'VIGENCIA_DO_PGTO','VAL_RECEBIDO', 'VAL_PARCELA',
-                  'VAL_PRODUCAO', 'VAL_MULTA', 'VAL_DESCONTO', 'VAL_ADESAO', 'DATA_CREDITO']
+                    'VAL_PRODUCAO', 'VAL_MULTA', 'VAL_DESCONTO', 'VAL_ADESAO', 'DATA_CREDITO']
 
         checked_turmas = []
+
         # Listas para armazenar valores por turma
-        turma_receb = 0.0
-        turma_parc = 0.0
-        turma_prod = 0.0
-        turma_mult = 0.0
-        turma_desc = 0.0
-        turma_ades = 0.0
+        turma_recebidos = 0.0
+        turma_parcelas = 0.0
+        turma_producao = 0.0
+        turma_multas = 0.0
+        turma_descontos = 0.0
+        turma_adesoes = 0.0
         subtotal_previsto = None
         subtotal_realizado = None
-
-        idx = 0
+        index = 0
 
         for row in mytable:  # Divisão de turmas
             if row[0] not in checked_turmas:
                 checked_turmas.append(row[0])
-                if turma_receb != 0.0:
+                if turma_recebidos != 0.0:
                     writer.writerow(subtotal_previsto)
                     writer.writerow(subtotal_realizado)
-                    turma_receb = 0.0
-                    turma_parc = 0.0
-                    turma_prod = 0.0
-                    turma_mult = 0.0
-                    turma_desc = 0.0
-                    turma_ades = 0.0
+                    turma_recebidos = 0.0
+                    turma_parcelas = 0.0
+                    turma_producao = 0.0
+                    turma_multas = 0.0
+                    turma_descontos = 0.0
+                    turma_adesoes = 0.0
                     writer.writerow('')
-                writer.writerow([f'Periodo de comissão: {data_inicial} a {data_final}'])
+                writer.writerow([f'Periodo de comissão: {start_date} a {end_date}'])
                 writer.writerow(header)
 
             # Linhas de cada turma
@@ -209,109 +105,22 @@ def output_comission_table():
                 writer.writerow([*row])
 
             # Colunas para cálculo por turma
-            turma_receb += calc_receb[idx]
-            turma_parc += calc_parcelas[idx]
-            turma_prod += calc_prod[idx]
-            turma_mult += calc_multa[idx]
-            turma_desc += calc_desco[idx]
-            turma_ades += calc_adesao[idx]
-
+            turma_recebidos += calc_receb[index]
+            turma_parcelas += calc_parcelas[index]
+            turma_producao += calc_prod[index]
+            turma_multas += calc_multa[index]
+            turma_descontos += calc_desco[index]
+            turma_adesoes += calc_adesao[index]
             subtotal_previsto = ['', '','', '', 'SUBTOTAL PREVISTO',
-                                 '{:.2f}'.format(turma_receb).replace('.', ','),
-                                 '{:.2f}'.format(turma_parc).replace('.', ','),
-                                 '{:.2f}'.format(turma_prod).replace('.', ','),
-                                 '{:.2f}'.format(turma_mult).replace('.', ','),
-                                 '{:.2f}'.format(turma_desc).replace('.', ','),
-                                 '{:.2f}'.format(turma_ades).replace('.', ',')]
-
+                                    '{:.2f}'.format(turma_recebidos).replace('.', ','),
+                                    '{:.2f}'.format(turma_parcelas).replace('.', ','),
+                                    '{:.2f}'.format(turma_producao).replace('.', ','),
+                                    '{:.2f}'.format(turma_multas).replace('.', ','),
+                                    '{:.2f}'.format(turma_descontos).replace('.', ','),
+                                    '{:.2f}'.format(turma_adesoes).replace('.', ',')]
             subtotal_realizado = ['','', '', '', 'VALOR PARA COMISSAO', '',
-                                  '{:.2f}'.format(turma_parc + turma_desc).replace('.', ',')]
-
-            idx += 1
-
-        soma_parcelas = sum(calc_parcelas)
-        soma_prod = sum(calc_prod)
-        soma_multa = sum(calc_multa)
-        soma_desc = sum(calc_desco)
-        soma_adesao = sum(calc_adesao)
-        total = soma_parcelas + soma_adesao + soma_multa + soma_prod + soma_desc
-        writer.writerow(['', '', '', 'TOTAL',
-                         '{:.2f}'.format(total).replace('.', ','),
-                         '{:.2f}'.format(soma_parcelas).replace('.', ','),
-                         '{:.2f}'.format(soma_prod).replace('.', ','),
-                         '{:.2f}'.format(soma_multa).replace('.', ','),
-                         '{:.2f}'.format(soma_desc).replace('.', ','),
-                         '{:.2f}'.format(soma_adesao).replace('.', ',')])
-        writer.writerow([output_date()])
-
-
-def output_comission_table2():
-    # Exporta uma tabela com os valores separados por turma para uso no comissionamento dos valores
-
-    tb_columns = (turma, titulos, venc, sacado, val_pgtos, valor_parcelas,
-                  valor_multa, valor_desc, credito)
-    mytable = [[turm, titul, venci, sacad, val_pgto, parcel, mult, desc, cred]
-               for turm, titul, venci, sacad, val_pgto, parcel,mult, desc, cred
-               in zip(*tb_columns)]
-    with open('table_comission2.csv', 'w') as exported_table:
-        writer = csv.writer(exported_table, delimiter=';')
-        header = ['TURMA', 'TITULO', 'VENCIMENTO', 'SACADO', 'VIGENCIA', 'VAL_PARCELA',
-                  'VAL_MULTA', 'VAL_DESCONTO', 'DATA_CREDITO']
-
-        checked_turmas = []
-        # Listas para armazenar valores por turma
-        turma_receb = 0.0
-        turma_parc = 0.0
-        turma_prod = 0.0
-        turma_mult = 0.0
-        turma_desc = 0.0
-        turma_ades = 0.0
-        subtotal_previsto = None
-        subtotal_realizado = None
-
-        idx = 0
-
-        for row in mytable:  # Divisão de turmas
-            if row[0] not in checked_turmas:
-                checked_turmas.append(row[0])
-                if turma_receb != 0.0:
-                    # writer.writerow(subtotal_previsto)
-                    writer.writerow(subtotal_realizado)
-                    turma_receb = 0.0
-                    turma_parc = 0.0
-                    turma_prod = 0.0
-                    turma_mult = 0.0
-                    turma_desc = 0.0
-                    turma_ades = 0.0
-                    writer.writerow('')
-                writer.writerow([f'Periodo de comissão: {data_inicial} a {data_final}'])
-                writer.writerow(header)
-
-            # Linhas de cada turma
-
-            if row[0] in checked_turmas:
-                writer.writerow([*row])
-
-            # Colunas para cálculo por turma
-            turma_receb += calc_receb[idx]
-            turma_parc += calc_parcelas[idx]
-            turma_prod += calc_prod[idx]
-            turma_mult += calc_multa[idx]
-            turma_desc += calc_desco[idx]
-            turma_ades += calc_adesao[idx]
-
-            # subtotal_previsto = ['', '','', '', 'SUBTOTAL PREVISTO',
-            #                      '{:.2f}'.format(turma_receb).replace('.', ','),
-            #                      '{:.2f}'.format(turma_parc).replace('.', ','),
-            #                      '{:.2f}'.format(turma_prod).replace('.', ','),
-            #                      '{:.2f}'.format(turma_mult).replace('.', ','),
-            #                      '{:.2f}'.format(turma_desc).replace('.', ','),
-            #                      '{:.2f}'.format(turma_ades).replace('.', ',')]
-
-            subtotal_realizado = ['','', '', '', 'VALOR PARA COMISSAO',
-                                  '{:.2f}'.format(turma_parc + turma_desc).replace('.', ',')]
-
-            idx += 1
+                                    '{:.2f}'.format(turma_parcelas + turma_descontos).replace('.', ',')]
+            index += 1
 
         soma_parcelas = sum(calc_parcelas)
         soma_prod = sum(calc_prod)
@@ -320,74 +129,138 @@ def output_comission_table2():
         soma_adesao = sum(calc_adesao)
         total = soma_parcelas + soma_adesao + soma_multa + soma_prod + soma_desc
         writer.writerow(['', '', '', 'TOTAL',
-                         '{:.2f}'.format(total).replace('.', ','),
-                         '{:.2f}'.format(soma_parcelas).replace('.', ','),
-                         '{:.2f}'.format(soma_prod).replace('.', ','),
-                         '{:.2f}'.format(soma_multa).replace('.', ','),
-                         '{:.2f}'.format(soma_desc).replace('.', ','),
-                         '{:.2f}'.format(soma_adesao).replace('.', ',')])
-        writer.writerow([output_date()])
-
-# filename = input("\033[36m"'Insira o nome e extensão do arquivo csv que deseja abrir: ')
-# start_date = input("\033[36m""Insira a data de inicio do filtro de comissionamento, ano/mês/dia - AAAA/MM/DD: ")
-# end_date = input("\033[36m""Insira a data de fim do filtro de comissionamento, ano/mês/dia - AAAA/MM/DD: ")
-# data = DataCSV(filename)
-data = DataCSV('source.csv')
+                            '{:.2f}'.format(total).replace('.', ','),
+                            '{:.2f}'.format(soma_parcelas).replace('.', ','),
+                            '{:.2f}'.format(soma_prod).replace('.', ','),
+                            '{:.2f}'.format(soma_multa).replace('.', ','),
+                            '{:.2f}'.format(soma_desc).replace('.', ','),
+                            '{:.2f}'.format(soma_adesao).replace('.', ',')])
+        writer.writerow([rd.output_date()])
 
 
-# Import columns data into lists
-turma = data.access_column('turma')
-titulos = data.access_column('titulo')
-sacado = data.access_column('sacado')
-recebido = data.access_column('recebido')
-credito = data.access_column('credito')
-venc = data.access_column('vencimento')
-raw_descritivo = data.access_column('descritivo')
+def execute_button():
+    data_modeling()
 
-# TRATAMENTO DE INFORMAÇÕES
-
-# Redução de espaços excedentes
-turma = string_strip(turma)
-include_semturma(turma)
-sacado = string_strip(sacado)
-credito = string_strip(credito)
-raw_descritivo = string_strip(raw_descritivo)
-
-# Separação de linhas em elementos de uma lista
-descritivo = separate_lines(raw_descritivo, '\n')
-
-# Separação dos elementos da lista descritivo em colunas únicas
-parcelas = matcher_not_instr(descritivo)
-adesao = matcher_instr(descritivo, 'ades')
-multas = matcher_instr(descritivo, 'mult')
-producao = matcher_instr(descritivo, 'prod')
-desconto = matcher_instr(descritivo, 'desc')
-
-# Separação entre identificação da conta e o valor da conta
-tipo_adesao, valor_adesao = values_split(adesao)
-tipo_parcelas, valor_parcelas = values_split(parcelas)
-tipo_multa, valor_multa = values_split(multas)
-tipo_prod, valor_prod = values_split(producao)
-tipo_desc, valor_desc = values_split(desconto)
-
-# Inclusão de sinal negativo para identificação "desconto"
-negative_values(tipo_desc, valor_desc)
-
-# Conversão em float para realização de cálculos
-calc_adesao = data.col_str2numbers(valor_adesao)
-calc_multa = data.col_str2numbers(valor_multa)
-calc_parcelas = data.col_str2numbers(valor_parcelas)
-calc_prod = data.col_str2numbers(valor_prod)
-calc_desco = data.col_str2numbers(valor_desc)
-calc_receb = data.col_str2numbers(recebido)
-
-# Classificação de validade dos pagamentos
-data_inicial = '28/02/2019'
-data_final = '28/03/2019'
-val_pgtos = payment_validity(venc, data_inicial, data_final)
+    if button_income_table.getvar('PY_VAR0') == 1:
+        output_income_table(start_date_input.get(), end_date_input.get())
+    if button_comission_table.getvar('PY_VAR1') == 1:
+        output_comission_table(start_date_input.get(), end_date_input.get())
 
 
-if __name__ == '__main__':
-    output_income_table()
-    output_comission_table()
-    # output_comission_table2()
+def data_modeling():
+    # data = DataCSV(filename_input.get())
+    global filename
+    data = DataCSV(filename)
+
+    turma = data.access_column('turma')
+    titulos = data.access_column('titulo')
+    sacado = data.access_column('sacado')
+    recebido = data.access_column('recebido')
+    credito = data.access_column('credito')
+    vencimento = data.access_column('vencimento')
+    raw_descritivo = data.access_column('descritivo')
+
+    "Redução de espaços excedentes"
+    turma = rd.string_strip(turma)
+    rd.include_semturma(turma)
+    sacado = rd.string_strip(sacado)
+    credito = rd.string_strip(credito)
+    raw_descritivo = rd.string_strip(raw_descritivo)
+
+    "Separação de linhas em elementos de uma lista"
+    descritivo = rd.separate_lines(raw_descritivo, '\n')
+
+    "Separação dos elementos da lista descritivo em colunas únicas"
+    parcelas = rd.matcher_not_instr(descritivo)
+    adesao = rd.matcher_instr(descritivo, 'ades')
+    multas = rd.matcher_instr(descritivo, 'mult')
+    producao = rd.matcher_instr(descritivo, 'prod')
+    desconto = rd.matcher_instr(descritivo, 'desc')
+
+    "Separação entre identificação da conta e o valor da conta"
+    tipo_adesao, valor_adesao = rd.values_split(adesao)
+    tipo_parcelas, valor_parcelas = rd.values_split(parcelas)
+    tipo_multa, valor_multa = rd.values_split(multas)
+    tipo_prod, valor_prod = rd.values_split(producao)
+    tipo_desc, valor_desc = rd.values_split(desconto)
+
+    "Inclusão de sinal negativo para identificação 'desconto'"
+    rd.negative_values(tipo_desc, valor_desc)
+
+    "Conversão em float para realização de cálculos"
+    calc_adesao = data.col_str2numbers(valor_adesao)
+    calc_multa = data.col_str2numbers(valor_multa)
+    calc_parcelas = data.col_str2numbers(valor_parcelas)
+    calc_prod = data.col_str2numbers(valor_prod)
+    calc_desco = data.col_str2numbers(valor_desc)
+    calc_receb = data.col_str2numbers(recebido)
+
+    "Classificação de validade dos pagamentos"
+    val_pgtos = rd.payment_validity(vencimento, start_date_input.get(), end_date_input.get())
+
+    tb_columns = (turma, titulos, vencimento, sacado, val_pgtos, recebido, valor_parcelas,
+                  valor_prod, valor_multa, valor_desc, valor_adesao, credito)
+
+    calc_data = {
+        'recebidos': calc_receb,
+        'parcelas': calc_parcelas,
+        'producao': calc_prod,
+        'multas': calc_multa,
+        'descontos': calc_desco,
+        'adesao': calc_adesao
+    }
+
+    return tb_columns, calc_data
+
+def open_file():
+    global filename
+    file_path = filedialog.askopenfilename(initialdir = getcwd(),title = "Select file",
+                                           filetypes = (("extensão csv","*.csv"),("all files","*.*")))
+    file_path = str(file_path).split('/')
+    filename = file_path[-1]
+
+
+# Definição da janela do programa
+window = Tk()
+window.wm_title('COMISSÃO - GALPÃO DO CIRCO')
+window.geometry('500x250')
+
+# Caixas de texto
+label_filename = Label(text='1 - Selecione o arquivo .csv no campo abaixo')
+label_periodo = Label(text='''2 - Demarque o periodo do comissionamento incluindo as datas 
+no campo abaixo. Use o formato dd/mm/aaaa''', justify='center')
+label_output = Label(text='3 - Escolha a informação que deseja extrair')
+
+# Inputs
+
+button_filename = Button(text="Escolha o arquivo", command=open_file)
+# filename_input = Entry(justify='center')
+start_date_input = Entry(justify='center')
+end_date_input = Entry(justify='center')
+
+# Variáveis do checkbutton
+income_button_variable = IntVar()
+comission_button_variabe = IntVar()
+
+# Botões
+button_income_table = Checkbutton(text='Receita mensal', variable=income_button_variable,
+                                  onvalue=1, offvalue=0)
+button_comission_table = Checkbutton(text='Comissionamento', variable=comission_button_variabe,
+                                     onvalue=1, offvalue=0)
+# button_confirm = Button(text='Clique para confirmar', command=data_modeling)
+button_execute = Button(text='Executar', command=execute_button)
+
+window.group = {
+    label_filename.pack(),
+    # filename_input.pack(),
+    button_filename.pack(),
+    label_periodo.pack(),
+    start_date_input.pack(),
+    end_date_input.pack(),
+    label_output.pack(),
+    button_income_table.pack(),
+    button_comission_table.pack(),
+    button_execute.pack(),
+}
+
+window.mainloop()
