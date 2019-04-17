@@ -1,10 +1,9 @@
-from csvstats import DataCSV
+from Dependencias.csvstats import DataCSV
 import csv
-import reader as rd
+import Dependencias.reader as rd
 from tkinter import *
 from tkinter import filedialog
 from os import getcwd
-
 
 
 def output_income_table(start_date, end_date):
@@ -19,7 +18,8 @@ def output_income_table(start_date, end_date):
     mytable = [[turm, titul, venci, sacad, val_pgto, receb, parcel, produ, mult, desc, ades, cred]
                for turm, titul, venci, sacad, val_pgto, receb, parcel, produ, mult, desc, ades, cred
                in zip(*my_table_columns)]
-    with open('table_incomes.csv', 'w') as exported_table:
+    output_name = f'Receitas - {start_date.replace("/","_")} a {end_date.replace("/", "_")}'
+    with open(f'{output_name}.csv', 'w', newline='\n') as exported_table:
         writer = csv.writer(exported_table, delimiter=';')
         header = ['TURMA', 'TITULO', 'VENCIMENTO', 'SACADO', 'VIGENCIA_DO_PGTO','VAL_RECEBIDO', 'VAL_PARCELA',
                     'VAL_PRODUCAO', 'VAL_MULTA', 'VAL_DESCONTO', 'VAL_ADESAO', 'DATA_CREDITO']
@@ -65,7 +65,9 @@ def output_comission_table(start_date, end_date):
                 for turm, titul, venci, sacad, val_pgto, receb, parcel, produ, mult, desc, ades, cred
                 in zip(*my_table_columns)]
 
-    with open('table_comission.csv', 'w') as exported_table:
+
+    output_name = f'Comissão - {start_date.replace("/","_")} a {end_date.replace("/", "_")}'
+    with open(f'{output_name}.csv', 'w', newline='\n') as exported_table:
         writer = csv.writer(exported_table, delimiter=';')
         header = ['TURMA', 'TITULO', 'VENCIMENTO', 'SACADO', 'VIGENCIA_DO_PGTO','VAL_RECEBIDO', 'VAL_PARCELA',
                     'VAL_PRODUCAO', 'VAL_MULTA', 'VAL_DESCONTO', 'VAL_ADESAO', 'DATA_CREDITO']
@@ -147,6 +149,7 @@ def execute_button():
         output_comission_table(start_date_input.get(), end_date_input.get())
     label_resultado['text']= 'Feito!'
 
+
 def data_modeling():
     global filename
     data = DataCSV(filename)
@@ -208,8 +211,8 @@ def data_modeling():
         'descontos': calc_desco,
         'adesao': calc_adesao
     }
-
     return tb_columns, calc_data
+
 
 def open_file():
     global filename
@@ -218,27 +221,29 @@ def open_file():
     file_path = str(file_path).split('/')
     filename = file_path[-1]
 
-
 # Definição da janela do programa
 window = Tk()
-window.wm_title('COMISSÃO - GALPÃO DO CIRCO')
-window.geometry('460x390')
+window.wm_title('COMISSÃO - GALPÃO DO CIRCO v1.0')
+window.geometry('520x500')
 window.config(background='white')
-logo_png = PhotoImage(file='logo_bolinha.png')
+logo_png = PhotoImage(file=(str(getcwd())+'/Dependencias/logo_bolinha.png'))
 image_box = Canvas(width=110, height=110, bg='white', highlightthickness=0)
-image_box.create_image(55,55, image=logo_png, anchor='center')
+image_box.create_image(55, 55, image=logo_png, anchor='center')
 
 # Caixas de texto
-label_filename = Label(text='1 - Selecione o arquivo .csv no campo abaixo', bg='white')
+label_font = 'calibri, 12'
+label_filename = Label(text='1 - Selecione o arquivo .csv no campo abaixo', bg='white', font=label_font)
 label_periodo = Label(text='''2 - Demarque o periodo do comissionamento incluindo as datas 
-no campo abaixo. Use o formato dd/mm/aaaa''', justify='center', bg='white')
-label_output = Label(text='3 - Escolha a informação que deseja extrair', bg='white')
-label_resultado = Label(text='', bg='white', fg='green')
+no campo abaixo. Use o formato dd/mm/aaaa''', justify='center', bg='white', font=label_font)
+label_output = Label(text='3 - Escolha a informação que deseja extrair', bg='white', font=label_font)
+label_resultado = Label(text='', bg='white', fg='green', font=label_font)
+label_start_date = Label(text='de:', bg='white', fg='dark red')
+label_end_date= Label(text='até:', bg='white', fg='dark red')
 
 # Inputs
 button_filename = Button(text="Escolha o arquivo", command=open_file)
-start_date_input = Entry(justify='center', highlightcolor='orange', fg='blue')
-end_date_input = Entry(justify='center', highlightcolor='orange',fg='red')
+start_date_input = Entry(justify='center', highlightcolor='orange', fg='blue', borderwidth=2)
+end_date_input = Entry(justify='center', highlightcolor='orange', fg='blue', borderwidth=2)
 
 # Variáveis do checkbutton
 income_button_variable = IntVar()
@@ -246,23 +251,27 @@ comission_button_variabe = IntVar()
 
 # Botões
 button_income_table = Checkbutton(text='Receita mensal', variable=income_button_variable,
-                                  onvalue=1, offvalue=0, bg='white',activeforeground='blue')
+                                  onvalue=1, offvalue=0, bg='white',activeforeground='blue',
+                                  fg='dark green', font=7)
 button_comission_table = Checkbutton(text='Comissionamento', variable=comission_button_variabe,
-                                     onvalue=1, offvalue=0, bg='white', activeforeground='blue')
-button_execute = Button(text='Executar', command=execute_button)
+                                     onvalue=1, offvalue=0, bg='white', activeforeground='blue',
+                                     fg='dark blue', font=7)
+button_execute = Button(text='Executar', command=execute_button, bg='purple', fg='white', font='bold')
 
 window.group = {
     image_box.pack(),
-    label_filename.pack(),
-    button_filename.pack(),
-    label_periodo.pack(),
+    label_filename.pack(padx=2, pady=2),
+    button_filename.pack(padx=2, pady=10, ipadx=20),
+    label_periodo.pack(padx=2),
+    label_start_date.pack(),
     start_date_input.pack(),
+    label_end_date.pack(),
     end_date_input.pack(),
-    label_output.pack(),
-    button_income_table.pack(),
-    button_comission_table.pack(),
-    button_execute.pack(),
-    label_resultado.pack()
+    label_output.pack(padx=2, pady=10),
+    button_income_table.pack(padx=2, pady=2),
+    button_comission_table.pack(padx=2, pady=2),
+    button_execute.pack(padx=2, pady=10, ipadx=100),
+    label_resultado.pack(padx=2, pady=2)
 }
 
 window.mainloop()
