@@ -254,7 +254,6 @@ button_execute = Button(text='Executar', command=execute_button)
 window.group = {
     image_box.pack(),
     label_filename.pack(),
-    # filename_input.pack(),
     button_filename.pack(),
     label_periodo.pack(),
     start_date_input.pack(),
