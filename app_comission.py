@@ -145,10 +145,9 @@ def execute_button():
         output_income_table(start_date_input.get(), end_date_input.get())
     if button_comission_table.getvar('PY_VAR1') == 1:
         output_comission_table(start_date_input.get(), end_date_input.get())
-
+    label_resultado['text']= 'Feito!'
 
 def data_modeling():
-    # data = DataCSV(filename_input.get())
     global filename
     data = DataCSV(filename)
 
@@ -223,20 +222,23 @@ def open_file():
 # Definição da janela do programa
 window = Tk()
 window.wm_title('COMISSÃO - GALPÃO DO CIRCO')
-window.geometry('500x250')
+window.geometry('460x390')
+window.config(background='white')
+logo_png = PhotoImage(file='logo_bolinha.png')
+image_box = Canvas(width=110, height=110, bg='white', highlightthickness=0)
+image_box.create_image(55,55, image=logo_png, anchor='center')
 
 # Caixas de texto
-label_filename = Label(text='1 - Selecione o arquivo .csv no campo abaixo')
+label_filename = Label(text='1 - Selecione o arquivo .csv no campo abaixo', bg='white')
 label_periodo = Label(text='''2 - Demarque o periodo do comissionamento incluindo as datas 
-no campo abaixo. Use o formato dd/mm/aaaa''', justify='center')
-label_output = Label(text='3 - Escolha a informação que deseja extrair')
+no campo abaixo. Use o formato dd/mm/aaaa''', justify='center', bg='white')
+label_output = Label(text='3 - Escolha a informação que deseja extrair', bg='white')
+label_resultado = Label(text='', bg='white', fg='green')
 
 # Inputs
-
 button_filename = Button(text="Escolha o arquivo", command=open_file)
-# filename_input = Entry(justify='center')
-start_date_input = Entry(justify='center')
-end_date_input = Entry(justify='center')
+start_date_input = Entry(justify='center', highlightcolor='orange', fg='blue')
+end_date_input = Entry(justify='center', highlightcolor='orange',fg='red')
 
 # Variáveis do checkbutton
 income_button_variable = IntVar()
@@ -244,13 +246,13 @@ comission_button_variabe = IntVar()
 
 # Botões
 button_income_table = Checkbutton(text='Receita mensal', variable=income_button_variable,
-                                  onvalue=1, offvalue=0)
+                                  onvalue=1, offvalue=0, bg='white',activeforeground='blue')
 button_comission_table = Checkbutton(text='Comissionamento', variable=comission_button_variabe,
-                                     onvalue=1, offvalue=0)
-# button_confirm = Button(text='Clique para confirmar', command=data_modeling)
+                                     onvalue=1, offvalue=0, bg='white', activeforeground='blue')
 button_execute = Button(text='Executar', command=execute_button)
 
 window.group = {
+    image_box.pack(),
     label_filename.pack(),
     # filename_input.pack(),
     button_filename.pack(),
@@ -261,6 +263,7 @@ window.group = {
     button_income_table.pack(),
     button_comission_table.pack(),
     button_execute.pack(),
+    label_resultado.pack()
 }
 
 window.mainloop()
