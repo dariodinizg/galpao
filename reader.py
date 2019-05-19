@@ -63,8 +63,10 @@ def values_split(lista_str: list) -> (list, list):
 
 
 def matcher_not_instr(lista_str: list):
-    # Itera uma lista separando, em outra lista, valores que NÃO cumpre com os critérios fornecidos.
-    # 'ades', 'multa', 'prod', 'desc'
+    """
+    Itera uma lista separando, em outra lista, valores que NÃO cumpre com os critérios fornecidos.
+    'ades', 'multa', 'prod', 'desc'
+    """
     column = []
     for line in lista_str:
         valid_element = None
@@ -85,7 +87,6 @@ def matcher_not_instr(lista_str: list):
 def output_date():
     # Retorna o dia e o horário em que o programa gerou o output
     now_time = datetime.now().strftime('%d/%m/%Y às %H:%M')
-
     return f'Emissão do relatório: {now_time}'
 
 
