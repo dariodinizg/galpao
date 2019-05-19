@@ -223,7 +223,7 @@ window = Tk()
 window.wm_title('COMISSÃO - GALPÃO DO CIRCO')
 window.geometry('460x390')
 window.config(background='white')
-logo_png = PhotoImage(file='logo_demo.png')
+logo_png = PhotoImage(file='logo_bolinha.png')
 image_box = Canvas(width=110, height=110, bg='white', highlightthickness=0)
 image_box.create_image(55,55, image=logo_png, anchor='center')
 
@@ -248,7 +248,7 @@ button_income_table = Checkbutton(text='Receita mensal', variable=income_button_
                                   onvalue=1, offvalue=0, bg='white',activeforeground='blue')
 button_comission_table = Checkbutton(text='Comissionamento', variable=comission_button_variabe,
                                      onvalue=1, offvalue=0, bg='white', activeforeground='blue')
-button_execute = Button(text='Executar', command=execute_button)
+button_execute = Button(text='Executar', command=execute_button, bg="purple", fg='white')
 
 window.group = {
     image_box.pack(),
