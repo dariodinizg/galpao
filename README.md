@@ -5,5 +5,6 @@ The goal of the app is to automate a monthly task of getting an raw table given 
 
 The app also offers another table discriminating values for monthly administration.
 
+*Implementation result: Although a simple program, it was very useful cause due to successfully relieve the administrator from his monthly task of manual parsing the data and even helped the company find mistakes in the way some registers was done in company's CRM.
 
 ![input and output example](https://github.com/dariodinizg/galpao/raw/master/Input%20and%20output%20example.png)
