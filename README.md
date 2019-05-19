@@ -6,4 +6,4 @@ The goal of the app is to automate a monthly task of getting an raw table given 
 The app also offers another table discriminating values for monthly administration.
 
 
-!["input and output example"](/home/dariodg/Desktop/Input and output example.png)
+![input and output example](https://github.com/dariodinizg/galpao/raw/master/Input%20and%20output%20example.png)
