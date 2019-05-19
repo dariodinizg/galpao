@@ -60,7 +60,6 @@ def output_comission_table(start_date, end_date):
     calc_multa = my_calc_columns['multas']
     calc_desco = my_calc_columns['descontos']
     calc_adesao = my_calc_columns['adesao']
-
     mytable = [[turm, titul, venci, sacad, val_pgto, receb, parcel, produ, mult, desc, ades, cred]
                 for turm, titul, venci, sacad, val_pgto, receb, parcel, produ, mult, desc, ades, cred
                 in zip(*my_table_columns)]
