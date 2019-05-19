@@ -223,7 +223,7 @@ window = Tk()
 window.wm_title('COMISSÃO - GALPÃO DO CIRCO')
 window.geometry('460x390')
 window.config(background='white')
-logo_png = PhotoImage(file='logo_bolinha.png')
+logo_png = PhotoImage(file='logo_demo.png')
 image_box = Canvas(width=110, height=110, bg='white', highlightthickness=0)
 image_box.create_image(55,55, image=logo_png, anchor='center')
 
