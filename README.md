@@ -1,7 +1,9 @@
-# Comission App created for the brazillian company Gapão do Circo
+# First App created for the brazillian company Gapão do Circo
 company site: http://galpaodocirco.com.br/
 
 My first program to help a real company.
+
+OBS: When I created this app I did not know pandas module, so it uses CSV and lots of parsing logic to manage tables.
 
 The goal of the app is to automate a monthly task of getting an raw table given by the school software and work the data to output a table discriminating values, types of incomes, discounts and other informations for comission pourpose.
 
