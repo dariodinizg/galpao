@@ -7,3 +7,6 @@ design.txt
 .vscode
 logo.png
 logo_bolinha.png
+.cache
+.ipynb*
+__pycache__

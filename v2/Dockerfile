@@ -1,9 +1,10 @@
-FROM python:3.7-alpine
+FROM python:slim
 
+ENV PYTHONUNBUFFERED 1
 ENV login = gdcirco
 ENV password = gdcirco123
 
-RUN pip install pandas
+RUN pip3 install pandas matplotlib seaborn
 
 COPY . /core
 WORKDIR /core

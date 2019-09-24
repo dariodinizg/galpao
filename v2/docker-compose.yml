@@ -1,0 +1,11 @@
+version: "3.7"
+services:
+  core:
+    build:
+      context: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/core
+    command: >
+      sh -c "python3 main.py"
