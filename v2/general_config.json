@@ -1,3 +1,10 @@
 {
-    "extension":"sua extensão",
-    "data_file":"/home/dariodg/Desktop/free/Galpao/ComissionApp/docs/comissabril2019.XLS"}
+    "extension":["xls", "XLS"],
+    "dataset":"/home/dariodg/Desktop/free/Galpao/ComissionApp/docs/comissabril2019.XLS",
+    "classification_patterns": {
+        "adesao":"ADES",
+        "producao": "PROD",
+        "multa": "MULT",
+        "desconto":"DESC"
+    }
+} 

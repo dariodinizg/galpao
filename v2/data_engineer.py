@@ -1,18 +1,17 @@
 import pandas as pd
-from configuration import SettingsManager
+from config_manager import ConfigManager
 import json
-
-# df = pd.read_excel('/home/dariodg/Desktop/Free/Galpao/ComissionApp/docs/comissabril2019.XLS')
 
 
 class DataEngineer:
 
     CONFIG_FILE = 'general_config.json'
-    SETTINGS = SettingsManager(CONFIG_FILE)
-    DATA = pd.read_excel(SETTINGS['data_file'])
+    SETTINGS = ConfigManager(CONFIG_FILE).settings
+    # this line will be replaced by the gui input
+    DATASET = pd.read_excel(SETTINGS['dataset'])
 
     # def __init__(self, config_file):
-    #     self.settings = SettingsManager(config_file)
+    #     self.settings = ConfigManager(config_file)
     #     self.data_file = pd.read_excel(self.settings['data_file'])
 
     @property
@@ -24,29 +23,49 @@ class DataEngineer:
             "data_file": {self.SETTINGS["data_file"]}
         '''
 
-    def fill_sem_turma(value):
-        """ Change empty values, considered as float, to 'sem_turma' """
-        if type(value) == float:
-            return 'sem_turma'
-        return value
+    @staticmethod
+    def fill_values(current_value, new_value):
+        """ Change empty values, considered as float, to new_value """
+        if type(current_value) == float:
+            return new_value
+        return current_value
+
+    @staticmethod
+    def str_normalize(row):
+        return row.upper()
     
-    def run(self):
-        """ Apply the treatments in the table and return a new dataframe"""
-        turmas = self.DATA['turma'].apply(self.fill_sem_turma)
-        
+    @staticmethod
+    def strip_n_split(row):
+        """ Remove white spaces and split new lines, forming a list"""
+        return row.strip().split('\n')
+
+    @staticmethod
+    def get_match(row, pattern):
+        """ 
+        Search for a pattern within the values of a row(type list) and return the value
+        if the match is True, else returns empty.
+        Assign the result to a new variable. Dont override the original
+         """
+        for value in row:
+            if pattern in value:
+                return value
+        return ''
+
+    def apply_treatment(self):
+        """ 
+        Main method of the class.
+        Called to apply the functions, through pandas, and return a new dataframe.
+        """
+
+        """ Column 'turma' treatment """
+        turmas = self.DATASET['turma'].apply(self.fill_values, args=('sem_turma',))
+
+        """ Column 'descritivo' treatment """
+        descritivo = self.DATASET['descritivo'].apply(self.str_normalize)
+        descritivo = descritivo.apply(self.strip_n_split)
+
+        """ Schema for the treated dataframe """
         treated_df = {
             'turma': turmas
         }
         return pd.DataFrame(data=treated_df)
-
-# CONFIG_FILE = 'general_config.json'
-# SETTINGS_MANAGER = SettingsManager(CONFIG_FILE)
-# DATA = SETTINGS_MANAGER.settings
-
-# print(f'''
-#             "data_file": {CONFIG_FILE},
-#             "data_keys":{tuple(DATA.keys())},
-#             "data_values":{tuple(DATA.values())}
-#         ''')
-
-print(DataEngineer().run().head())

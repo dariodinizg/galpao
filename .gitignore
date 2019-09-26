@@ -9,4 +9,5 @@ logo.png
 logo_bolinha.png
 .cache
 .ipynb*
+venv
 __pycache__
