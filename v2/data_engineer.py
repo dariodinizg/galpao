@@ -13,10 +13,6 @@ class DataEngineer:
     DATASET = pd.read_excel(SETTINGS['dataset'])
     PATTERNS = SETTINGS['classification_patterns']
 
-    # def __init__(self, config_file):
-    #     self.settings = ConfigManager(config_file)
-    #     self.data_file = pd.read_excel(self.settings['data_file'])
-
     def _regex_build(self):
         """Builds a regex for get_non_match method. Ex: '(ADES)|(MULT)|(PROD)'."""
         all_patterns = []
@@ -30,7 +26,7 @@ class DataEngineer:
         It takes a float string ("1,23" or "1,234.567.890") and
         converts it to floating point number (1.23 or 1.234567890).
         """
-        
+
         if float_string is not None: 
             float_string = str(float_string)
             if float_string.count(".") == 1 and float_string.count(",") == 0:
@@ -82,22 +78,45 @@ class DataEngineer:
 
     def get_non_match(self, pd_serie):
         """Select a value from a list that do not correspond a given regex"""
-        regex = self._regex_build()
-        valid = []
+        regex = re.compile('(ADES)|(MULT)|(PROD)|(DESC)')
+        valids = []
         for row in pd_serie:
             invalid = []
             row_valid = []
             for value in row:
-                if bool(re.search(regex, value)):
-                    invalid.append(value)
-                    if len(invalid) == len(row):
-                        valid.append('')
-                    else:
-                        continue
-                else:
+                if not bool(regex.search(value)):
                     row_valid.append(value)
-            valid.append(row_valid)
-        return valid
+                else:
+                    invalid.append(value)
+            if len(invalid) == len(row):
+                row_valid.append('')
+            valids.append(row_valid) # Creates a nested list
+
+        """
+        Since might be more than one payment of type 'parcelas' for a client, 
+        the code below check the valids list for two or more matches and rebuild the string
+        concatenating each label - colon separator - with the sum the amount of all values, 
+        thus creating one line for label and amount, keeping the dataframe consistency.
+        """
+        treated_valid = []
+        for value in valids:
+            if value != '':
+                if len(value) == 1: 
+                    treated_valid.append(*value) # Descompact the nested list
+                else:
+                    info_to_join = []
+                    amount_to_join = []
+                    for item in value:
+                        info, amount = item.split(r'R$')
+                        info_to_join.append(info)
+                        amount_to_join.append(self._str_to_float(amount))
+                    info_joined = ','.join(info_to_join)
+                    amount_sum = sum(amount_to_join)
+                    treated_valid.append(f"{info_joined} R$ {amount_sum}")
+            else:
+                treated_valid.append('')
+                
+        return treated_valid
 
     def split_label_n_amount(self, pd_serie):
         """ Split the payment's label and its amount in two columns."""
@@ -106,6 +125,24 @@ class DataEngineer:
         df[1] = df[1].str.strip()
         df[1] = df[1].apply(self._str_to_float)
         return df[0], df[1]
+
+    def parcelas_split_label_n_amount(self, list_obj: list):
+        """ 
+        Split the payment's label and its amount in two columns.
+        It needs a different function for split label and amount since the 
+        parameter is not a panda.Series, but a python list.
+        """
+        label_list = []
+        amount_list = []
+        for value in list_obj:
+            if value != '':
+                label,amount = value.split('R$')
+                label_list.append(label)
+                amount_list.append(amount)
+            else:
+                label_list.append('')
+                amount_list.append('')
+        return label_list, amount_list
 
     def apply_treatment(self):
         """ 
@@ -120,27 +157,23 @@ class DataEngineer:
         descritivo = self.DATASET['descritivo'].apply(self.str_normalize)
         descritivo = descritivo.apply(self.strip_n_split, args=('\n',))
 
+        # Select values of a panda.Series that dont match a criteria.
+        parcelas = pd.Series(data=self.get_non_match(descritivo))
+        
         # Select values of a panda.Series that match a criteria.
         adesao = descritivo.apply(self.get_match, args=(self.PATTERNS['adesao'],))
         producao = descritivo.apply(self.get_match, args=(self.PATTERNS['producao'],))
         multa = descritivo.apply(self.get_match, args=(self.PATTERNS['multa'],))
         desconto = descritivo.apply(self.get_match, args=(self.PATTERNS['desconto'],))
 
-        # Select values of a panda.Series that dont match a criteria.
-        parcelas = pd.Series(data=self.get_non_match(descritivo))
-        
-        #  PARA DELETAR        # 
-        # parcelas.to_excel('parcelas.xls')
-
-
         # Split label and amount
-        label_parcelas, amount_parcelas = self.split_label_n_amount(parcelas)
+        label_parcelas, amount_parcelas = self.parcelas_split_label_n_amount(parcelas)
         label_producao, amount_producao = self.split_label_n_amount(producao)
         label_multa, amount_multa = self.split_label_n_amount(multa)
         label_desconto, amount_desconto = self.split_label_n_amount(desconto)
         label_adesao, amount_adesao = self.split_label_n_amount(adesao)
-
-
+  
+        
         treated_df = {
             'TURMA': turmas,
             'TITULO': self.DATASET['titulo'],
@@ -148,7 +181,6 @@ class DataEngineer:
             'SACADO': self.DATASET['sacado'],
             'VAL_RECEBIDO':self.DATASET['recebido'],
             'VAL_PARCELA': amount_parcelas,
-            'VAL_PARCELA': parcelas,
             'VAL_PRODUCAO': amount_producao,
             'VAL_MULTA': amount_multa,
             'VAL_DESCONTO': amount_desconto,
@@ -167,6 +199,7 @@ class DataEngineer:
             df.to_excel(defaul_save_names['incomes_table'], index=False)
 
     def run(self):
+        """ Main method to treat and export the data"""
         self.apply_treatment()
         self.export_excel()
 

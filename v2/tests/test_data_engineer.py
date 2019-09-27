@@ -75,7 +75,7 @@ class TestDataEngineer(TestCase):
         test_df = self.engineer.split_label_n_amount(adesao)
         self.assertEqual(test_df[1][3], self.proof['valor_adesao'][1])
 
-    def test_split_label_n_amount2(self):
+    def test_parcelas_split_label_n_amount(self):
         """ Test for split_label_n_amount method, based in the information for column adesao"""
         treated_descritivo = self.setup_descritivo()
         patterns = self.settings['classification_patterns']
