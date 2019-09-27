@@ -6,5 +6,9 @@
         "producao": "PROD",
         "multa": "MULT",
         "desconto":"DESC"
-    }
+    },
+    "default_save_name": {
+        "comission_table": "comission.xls",
+        "incomes_table": "incomes.xls"
+    } 
 } 

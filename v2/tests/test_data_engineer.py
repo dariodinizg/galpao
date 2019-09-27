@@ -61,21 +61,50 @@ class TestDataEngineer(TestCase):
         # self.assertEqual(producao[3], self.proof['producao'][1])
 
     def test_get_non_match(self):
+        """ Test for get_non_match method. """
         treated_descritivo = self.setup_descritivo()
-        parcela = treated_descritivo.apply(self.engineer.get_non_match)
+        parcela = pd.Series(data=DataEngineer().get_non_match(treated_descritivo))
+        # parcela = treated_descritivo.apply(self.engineer.get_non_match)
         self.assertEqual(parcela[0], self.proof['parcela'][0])
 
-    def test_split_info_n_amount1(self):
+    def test_split_label_n_amount1(self):
+        """ Test for split_label_n_amount method, based in the value for column adesao"""
         treated_descritivo = self.setup_descritivo()
         patterns = self.settings['classification_patterns']
         adesao = treated_descritivo.apply(self.engineer.get_match, args=(patterns['adesao'],))
-        # self.df['info_adesao'], self.df['valor_adesao'] = self.engineer.info_n_amount(adesao)
-        test_df = self.engineer.info_n_amount(adesao)
-        self.assertEqual(test_df[1][3], '5220,00') #self.proof['valor_adesao'][1]
+        test_df = self.engineer.split_label_n_amount(adesao)
+        self.assertEqual(test_df[1][3], self.proof['valor_adesao'][1])
 
-    def test_split_info_n_amount2(self):
+    def test_split_label_n_amount2(self):
+        """ Test for split_label_n_amount method, based in the information for column adesao"""
         treated_descritivo = self.setup_descritivo()
         patterns = self.settings['classification_patterns']
         adesao = treated_descritivo.apply(self.engineer.get_match, args=(patterns['adesao'],))
-        test_df = self.engineer.info_n_amount(adesao)
+        test_df = self.engineer.split_label_n_amount(adesao)
         self.assertEqual(test_df[0][3], self.proof['info_adesao'][1])
+
+    # def test_split_label_n_amount3(self):
+    #     """ Test for split_label_n_amount method, based in the value for column parcelas"""
+    #     treated_descritivo = self.setup_descritivo()
+    #     parcelas = treated_descritivo.apply(self.engineer.get_non_match)
+    #     test_df = self.engineer.split_label_n_amount(parcelas)
+    #     self.assertEqual(test_df[1][3], '')
+
+    # def test_split_label_n_amount4(self):
+    #     """ Test for split_label_n_amount method, based in the information for column parcelas"""
+    #     treated_descritivo = self.setup_descritivo()
+    #     parcelas = treated_descritivo.apply(self.engineer.get_non_match)
+    #     test_df = self.engineer.split_label_n_amount(parcelas)
+    #     self.assertEqual(test_df[0][3], '')
+
+    def test_new_dataframe_consistency(self):
+        df_model = pd.DataFrame(data=self.engineer.apply_treatment())
+        parameter = len(self.df['titulo'])
+        columns = list(df_model)
+        for column in columns:
+            col_size = df_model[f"{column}"].size
+            try:
+                self.assertEqual(df_model[column].size, parameter)
+            except AssertionError:
+                print(f'Column {column} dont match the parameter. {col_size} != {parameter}')
+        
