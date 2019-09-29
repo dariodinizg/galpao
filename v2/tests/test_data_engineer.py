@@ -25,11 +25,11 @@ class TestDataEngineer(TestCase):
         df_header = ('turma', 'titulo', 'vencimento', 'sacado','recebido', 'credito', 'descritivo')
         self.assertEqual(tuple(self.df.head(0)), df_header)
 
-    def test_fill_empty(self):
-        """ test for method fill_empty """
-        col_turmas = self.df['turma']
-        col_turmas = col_turmas.apply(self.engineer.fill_empty, args=('sem_turma',))
-        self.assertEqual(col_turmas[0], 'sem_turma')
+    # def test_fill_empty(self):
+    #     """ test for method fill_empty """
+    #     col_turmas = self.df['turma']
+    #     col_turmas = col_turmas.apply(self.engineer.fill_empty, args=('sem_turma',))
+    #     self.assertEqual(col_turmas[0], 'sem_turma')
 
     def test_str_normalize(self):
         """ test for method str_normalize """
