@@ -1,6 +1,7 @@
 from data_engineer import DataEngineer
 import pandas as pd
 from unittest import TestCase, skip
+from datetime import datetime
 import os
 import sys
 sys.path.append(os.getcwd())
@@ -16,18 +17,18 @@ class TestDataEngineer(TestCase):
     def setUp(self):
         self.engineer = DataEngineer()
         self.settings = DataEngineer().SETTINGS
-        self.df = DataEngineer().DATASET
-        self.descritivo = self.df['descritivo']
+        self.df_file = DataEngineer().DATASET
+        self.descritivo = self.df_file['descritivo']
         self.proof = pd.read_excel('proof_model.xls', sheet_name='proof')
 
     def test_open_dataset(self):
         """ Verify if the dataset was correctly opened by the DataEngineer class """
         df_header = ('turma', 'titulo', 'vencimento', 'sacado','recebido', 'credito', 'descritivo')
-        self.assertEqual(tuple(self.df.head(0)), df_header)
+        self.assertEqual(tuple(self.df_file.head(0)), df_header)
 
     # def test_fill_empty(self):
     #     """ test for method fill_empty """
-    #     col_turmas = self.df['turma']
+    #     col_turmas = self.df_file['turma']
     #     col_turmas = col_turmas.apply(self.engineer.fill_empty, args=('sem_turma',))
     #     self.assertEqual(col_turmas[0], 'sem_turma')
 
@@ -63,8 +64,7 @@ class TestDataEngineer(TestCase):
     def test_get_non_match(self):
         """ Test for get_non_match method. """
         treated_descritivo = self.setup_descritivo()
-        parcela = pd.Series(data=DataEngineer().get_non_match(treated_descritivo))
-        # parcela = treated_descritivo.apply(self.engineer.get_non_match)
+        parcela = pd.Series(data=self.engineer.get_non_match(treated_descritivo))
         self.assertEqual(parcela[0], self.proof['parcela'][0])
 
     def test_split_label_n_amount1(self):
@@ -83,23 +83,29 @@ class TestDataEngineer(TestCase):
         test_df = self.engineer.split_label_n_amount(adesao)
         self.assertEqual(test_df[0][3], self.proof['info_adesao'][1])
 
-    # def test_split_label_n_amount3(self):
-    #     """ Test for split_label_n_amount method, based in the value for column parcelas"""
-    #     treated_descritivo = self.setup_descritivo()
-    #     parcelas = treated_descritivo.apply(self.engineer.get_non_match)
-    #     test_df = self.engineer.split_label_n_amount(parcelas)
-    #     self.assertEqual(test_df[1][3], '')
+    def test_add_negative_sign(self):
+        treated_descritivo = self.setup_descritivo()
+        patterns = self.settings['classification_patterns']
+        descontos = treated_descritivo.apply(self.engineer.get_match, args=(patterns['desconto'],))
+        test_df = self.engineer.split_label_n_amount(descontos)
+        amount_desconto = test_df[1].apply(self.engineer.add_negative_sign)
+        self.assertEqual(amount_desconto[213], -97.5)
 
-    # def test_split_label_n_amount4(self):
-    #     """ Test for split_label_n_amount method, based in the information for column parcelas"""
-    #     treated_descritivo = self.setup_descritivo()
-    #     parcelas = treated_descritivo.apply(self.engineer.get_non_match)
-    #     test_df = self.engineer.split_label_n_amount(parcelas)
-    #     self.assertEqual(test_df[0][3], '')
+    def test_roundin(self):
+        data = self.engineer.apply_treatment()
+        df = self.engineer.incomes_table(data)
+        total_recebido = df['VAL_RECEBIDO'].iloc[-1]
+        self.assertEqual(total_recebido, '80863,75')
+
+    # def test_to_datetime(self):
+    #     data = self.engineer.apply_treatment()
+    #     df = self.engineer.incomes_table(data)
+    #     print(df['VENCIMENTO'][1])
+    #     self.assertTrue(isinstance(df['VENCIMENTO'][1], datetime))
 
     def test_new_dataframe_consistency(self):
         df_model = pd.DataFrame(data=self.engineer.apply_treatment())
-        parameter = len(self.df['titulo'])
+        parameter = len(self.df_file['titulo'])
         columns = list(df_model)
         for column in columns:
             col_size = df_model[f"{column}"].size

@@ -1,7 +1,9 @@
 import pandas as pd
 import json
 import re
-from numpy import nan
+from decimal import Decimal, ROUND_HALF_DOWN, localcontext
+from StyleFrame import StyleFrame, Styler, utils
+from datetime import datetime
 
 from config_manager import ConfigManager
 
@@ -68,6 +70,10 @@ class DataEngineer:
                 return value
         return 0
 
+    @staticmethod
+    def add_negative_sign(row):
+        return row * -1
+
     def get_non_match(self, pd_serie):
         """Select a value from a list that do not correspond a given regex"""
         regex = re.compile('(ADES)|(MULT)|(PROD)|(DESC)')
@@ -118,6 +124,10 @@ class DataEngineer:
         df[1] = df[1].apply(self._str_to_float)
         return df[0], df[1]
 
+    def to_datetime(self, pd_serie):
+        pd_serie = pd.to_datetime(pd_serie ,format="%d/%M/%Y",dayfirst=True, utc=False)
+        return pd_serie
+
     def parcelas_split_label_n_amount(self, list_obj: list):
         """ 
         Split the payment's label and its amount in two columns.
@@ -166,25 +176,34 @@ class DataEngineer:
         _, amount_desconto = self.split_label_n_amount(desconto)
         _, amount_adesao = self.split_label_n_amount(adesao)
 
-        # fill empty spaces with zeros
-        amount_parcelas = [self.fill_empty(value, 0) for value in amount_parcelas]
-        amount_producao = [self.fill_empty(value, 0) for value in amount_producao]
-        amount_multa = [self.fill_empty(value, 0) for value in amount_multa]
-        amount_desconto = [self.fill_empty(value, 0) for value in amount_desconto]
-        amount_adesao = [self.fill_empty(value, 0) for value in amount_adesao]
+        amount_parcelas = pd.Series(data=amount_parcelas).apply(self.fill_empty, args=(0,))
+        amount_producao = pd.Series(data=amount_producao).apply(self.fill_empty, args=(0,))
+        amount_multa    = pd.Series(data=amount_multa).apply(self.fill_empty, args=(0,))
+        amount_adesao   = pd.Series(data=amount_adesao).apply(self.fill_empty, args=(0,))
+        amount_desconto = pd.Series(data=amount_desconto).apply(self.fill_empty, args=(0,))
 
         # Convert numeric strings to number
-        amount_parcelas = [self._str_to_float(value) for value in amount_parcelas]
-        amount_producao = [self._str_to_float(value) for value in amount_producao]
-        amount_multa = [self._str_to_float(value) for value in amount_multa]
-        amount_desconto = [self._str_to_float(value) for value in amount_desconto]
-        amount_adesao = [self._str_to_float(value) for value in amount_adesao]
-  
+        amount_parcelas = amount_parcelas.apply(self._str_to_float)
+        amount_producao = amount_producao.apply(self._str_to_float)
+        amount_multa    = amount_multa.apply(self._str_to_float)
+        amount_desconto = amount_desconto.apply(self._str_to_float)
+        amount_adesao   = amount_adesao.apply(self._str_to_float)
+
+        # Add negative sign to amount_desconto
+        amount_desconto = amount_desconto.apply(self.add_negative_sign)
+
+        """ 
+        Convert the date columns to datetime elements and change credito column to string
+        in order for the excel to correct display it
+        """
+        vencimento = self.to_datetime(self.DATASET['vencimento'])
+        credito = self.to_datetime(self.DATASET['credito']).apply(lambda date_string: f"{date_string.date().strftime('%d/%m/%Y')}")
+        
         
         treated_df = {
             'TURMA': turmas,
             'TITULO': self.DATASET['titulo'],
-            'VENCIMENTO': self.DATASET['vencimento'],
+            'VENCIMENTO': vencimento,
             'SACADO': self.DATASET['sacado'],
             'VAL_RECEBIDO':self.DATASET['recebido'],
             'VAL_PARCELA': amount_parcelas,
@@ -192,9 +211,8 @@ class DataEngineer:
             'VAL_MULTA': amount_multa,
             'VAL_DESCONTO': amount_desconto,
             'VAL_ADESAO': amount_adesao,
-            'DATA_CREDITO':self.DATASET['credito'],
+            'DATA_CREDITO': credito,
         }
-        
         return treated_df
 
     def incomes_table(self, data):
@@ -204,19 +222,28 @@ class DataEngineer:
         last line and below the column indicated by the keys.
         """
         df = pd.DataFrame (data)
-        col_sum = {
-            'TURMA': None,
-            'TITULO': None,
-            'VENCIMENTO': None,
-            'SACADO': 'TOTAL',
-            'VAL_RECEBIDO':sum(df['VAL_RECEBIDO']),
-            'VAL_PARCELA': sum(df['VAL_PARCELA']),
-            'VAL_PRODUCAO': sum(df['VAL_PRODUCAO']),
-            'VAL_MULTA': sum(df['VAL_MULTA']),
-            'VAL_DESCONTO': sum(df['VAL_DESCONTO']),
-            'VAL_ADESAO': sum(df['VAL_ADESAO']),
-            'DATA_CREDITO':None,
-        }
+        
+        if self.SETTINGS['sort_data']['incomes_table'] != '':
+            df.sort_values(by=['VENCIMENTO'])
+            vencimento = df['VENCIMENTO'].apply(lambda date_string: f"{date_string.date().strftime('%d/%m/%Y')}")
+            df['VENCIMENTO'] = vencimento
+        
+        CENTAVOS = Decimal('0.01')
+        with localcontext() as ctx:
+            ctx.rounding = ROUND_HALF_DOWN
+            col_sum = {
+                'TURMA': None,
+                'TITULO': None,
+                'VENCIMENTO': None,
+                'SACADO': 'TOTAL',
+                'VAL_RECEBIDO':f"{Decimal(sum(df['VAL_RECEBIDO'])).quantize(CENTAVOS)}".replace('.',','),
+                'VAL_PARCELA': f"{Decimal(sum(df['VAL_PARCELA'])).quantize(CENTAVOS)}".replace('.',','),
+                'VAL_PRODUCAO': f"{Decimal(sum(df['VAL_PRODUCAO'])).quantize(CENTAVOS)}".replace('.',','),
+                'VAL_MULTA': f"{Decimal(sum(df['VAL_MULTA'])).quantize(CENTAVOS)}".replace('.',','),
+                'VAL_DESCONTO': f"{Decimal(sum(df['VAL_DESCONTO'])).quantize(CENTAVOS)}".replace('.',','),
+                'VAL_ADESAO': f"{Decimal(sum(df['VAL_ADESAO'])).quantize(CENTAVOS)}".replace('.',','),
+                'DATA_CREDITO':None,
+            }
         # print(col_sum['VAL_RECEBIDO'])
         return df.append(col_sum, ignore_index=True)
 
@@ -226,36 +253,42 @@ class DataEngineer:
         # for turma in name_turmas:
         #     turmas[f'turma'] = df[df['TURMA'] == turma]
 
-    
-    def comission_table(self, data: dict):
-        pass
-
-    # def income_table_format(self, writer,workbook, worksheet):
-    #     cell_format = workbook.add_format({'font_color': 'green'})
-
-    #     # cell_format.set_pattern(1)  # This is optional when using a solid fill.
-    #     # bg_color = cell_format.set_bg_color('blue')
-    #     worksheet.set_row(0,20,cell_format)
-    #     writer.close()
+    def format_table(self, df):
+        sf = StyleFrame(df)
+        sf.apply_style_by_indexes(indexes_to_style=sf[sf['TITULO'] != ''],styler_obj=Styler(font_size=10))
+        sf.apply_headers_style(styler_obj=Styler(bold=False,
+                                                bg_color=utils.colors.grey,
+                                                border_type=utils.borders.thin,
+                                                font_size=10,
+                                                wrap_text=False,
+                                                shrink_to_fit=False))
+        col_width = {
+            'TURMA': 32,
+            'TITULO': 8,
+            'VENCIMENTO': 12,
+            'SACADO': 34,
+            'VAL_RECEBIDO':13.2,
+            'VAL_PARCELA': 12,
+            'VAL_PRODUCAO': 12,
+            'VAL_MULTA': 12,
+            'VAL_DESCONTO': 12,
+            'VAL_ADESAO': 12,
+            'DATA_CREDITO':12,
+        }
+        sf.set_column_width_dict(col_width)
+        return sf
 
     def export_excel(self, df):
         """ Export the treated dataframe to a excel file """
-        default_save_names = self.SETTINGS['default_save_name']['incomes_table']
-        writer = pd.ExcelWriter(default_save_names['file_name'], engine='xlsxwriter')
-        if True:
-            df.to_excel(writer, sheet_name=default_save_names['sheet_name'], index=False)
-        writer.close()
-        # workbook  = writer.book
-        # worksheet = writer.sheets['incomes']
-        # self.income_table_format(writer,workbook, worksheet)
-
-
+        #+ default_save_names = self.SETTINGS['default_save_name']['incomes_table']
+        styled_table = self.format_table(df)
+        styled_table.to_excel('output.xlsx').save()
+        
     def run(self):
         """ Main method to treat and export the data"""
         new_data = pd.DataFrame(data=self.apply_treatment())
         model = self.incomes_table(new_data)
         self.export_excel(model)
-
 
 if __name__ == '__main__':
     DataEngineer().run()

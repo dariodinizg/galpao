@@ -11,11 +11,14 @@
         "comission_table": {
             "file_name":"comission.xlsx",
             "sheet_name": "comission"
+        }
         },
         "incomes_table": {
             "file_name":"incomes.xlsx",
             "sheet_name": "incomes"
-        }
+        },
+    "sort_data":{
+        "incomes_table": "VENCIMENTO"
+    }
+}
 
-    } 
-} 
