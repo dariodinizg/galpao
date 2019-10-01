@@ -213,21 +213,80 @@ class DataEngineer:
             'VAL_ADESAO': amount_adesao,
             'DATA_CREDITO': credito,
         }
-        return treated_df
+        return pd.DataFrame(treated_df)
 
-    def incomes_table(self, data):
+    def comission_table(self, df):
+        sort_criteria = self.SETTINGS['sort_data']['incomes_table']
+        df = df.sort_values(by=['TURMA', sort_criteria])
+        schema_df = {
+                'TURMA':[] ,
+                'TITULO': [],
+                'VENCIMENTO': [],
+                'SACADO': [],
+                'VAL_RECEBIDO':[],
+                'VAL_PARCELA': [],
+                'VAL_PRODUCAO': [],
+                'VAL_MULTA': [],
+                'VAL_DESCONTO': [],
+                'VAL_ADESAO': [],
+                'DATA_CREDITO':[],
+            }
+        model_df = pd.DataFrame(data=schema_df)
+        header_dict = {
+                'TURMA':['TURMA'] ,
+                'TITULO': ['TITULO'],
+                'VENCIMENTO': ['VENCIMENTO'],
+                'SACADO': ['SACADO'],
+                'VAL_RECEBIDO':['VAL_RECEBIDO'],
+                'VAL_PARCELA': ['VAL_PARCELA'],
+                'VAL_PRODUCAO': ['VAL_PRODUCAO'],
+                'VAL_MULTA': ['VAL_MULTA'],
+                'VAL_DESCONTO': ['VAL_DESCONTO'],
+                'VAL_ADESAO': ['VAL_ADESAO'],
+                'DATA_CREDITO':['DATA_CREDITO'],
+            }
+        header_df = pd.DataFrame(data=header_dict)
+        CENTAVOS = Decimal('0.01')
+        for turma in df['TURMA'].unique():
+            turma_df = df[df['TURMA'] == turma]
+            with localcontext() as ctx:
+                ctx.rounding = ROUND_HALF_DOWN
+                col_sum = {
+                    'TURMA': None,
+                    'TITULO': None,
+                    'VENCIMENTO': None,
+                    'SACADO': 'TOTAL',
+                    'VAL_RECEBIDO':f"{Decimal(sum(turma_df['VAL_RECEBIDO'])).quantize(CENTAVOS)}".replace('.',','),
+                    'VAL_PARCELA': f"{Decimal(sum(turma_df['VAL_PARCELA'])).quantize(CENTAVOS)}".replace('.',','),
+                    'VAL_PRODUCAO': f"{Decimal(sum(turma_df['VAL_PRODUCAO'])).quantize(CENTAVOS)}".replace('.',','),
+                    'VAL_MULTA': f"{Decimal(sum(turma_df['VAL_MULTA'])).quantize(CENTAVOS)}".replace('.',','),
+                    'VAL_DESCONTO': f"{Decimal(sum(turma_df['VAL_DESCONTO'])).quantize(CENTAVOS)}".replace('.',','),
+                    'VAL_ADESAO': f"{Decimal(sum(turma_df['VAL_ADESAO'])).quantize(CENTAVOS)}".replace('.',','),
+                    'DATA_CREDITO':None,
+                }
+            turma_df = turma_df.append(col_sum, ignore_index=True)
+            
+            # model_df = turma_df.append(pd.Series(), ignore_index=True)
+
+            model_df = model_df.append(turma_df, ignore_index=True)
+            model_df = model_df.append(pd.Series(), ignore_index=True)
+            model_df = model_df.append(header_df, ignore_index=True)
+            # model_df = model_df.append(schema_df.keys(), ignore_index=True)
+
+        model_df.to_excel('teste.xlsx', index=False)
+            # incluir linha vazia
+            # dar append no df model
+        # print(turma_df.head())
+        return model_df
+
+    def incomes_table(self, df):
         """ 
         Generate a table with a total sum in the end for each income.
         The total is assigned as values of the dictionary 'col_sum" and it's place is in the 
         last line and below the column indicated by the keys.
         """
-        df = pd.DataFrame (data)
-        
-        if self.SETTINGS['sort_data']['incomes_table'] != '':
-            df.sort_values(by=['VENCIMENTO'])
-            vencimento = df['VENCIMENTO'].apply(lambda date_string: f"{date_string.date().strftime('%d/%m/%Y')}")
-            df['VENCIMENTO'] = vencimento
-        
+        sort_criteria = self.SETTINGS['sort_data']['incomes_table']
+        df = df.sort_values(by=['TURMA', sort_criteria])
         CENTAVOS = Decimal('0.01')
         with localcontext() as ctx:
             ctx.rounding = ROUND_HALF_DOWN
@@ -244,24 +303,35 @@ class DataEngineer:
                 'VAL_ADESAO': f"{Decimal(sum(df['VAL_ADESAO'])).quantize(CENTAVOS)}".replace('.',','),
                 'DATA_CREDITO':None,
             }
-        # print(col_sum['VAL_RECEBIDO'])
         return df.append(col_sum, ignore_index=True)
 
-            
-        # name_turmas = data['TURMA'].unique()
-        # turmas = {}
-        # for turma in name_turmas:
-        #     turmas[f'turma'] = df[df['TURMA'] == turma]
+    def _format_table(self, df):
 
-    def format_table(self, df):
+        # if sort_criteria != '':
+        sort_criteria = self.SETTINGS['sort_data']['incomes_table']
+        #     if sort_criteria == "VENCIMENTO" or "DATA_CREDITO":
+        excel_format = df[sort_criteria].apply(
+            lambda value: f"{value.date().strftime('%d/%m/%Y')}" 
+            if f"{type(value)}" == "<class 'pandas._libs.tslibs.timestamps.Timestamp'>"
+            else value)
+        df[sort_criteria] = excel_format
+        
         sf = StyleFrame(df)
         sf.apply_style_by_indexes(indexes_to_style=sf[sf['TITULO'] != ''],styler_obj=Styler(font_size=10))
+        sf.apply_style_by_indexes(indexes_to_style=sf[sf['TURMA'] == 'TURMA'],styler_obj=Styler(bold=False,
+                                                bg_color=utils.colors.grey,
+                                                border_type=utils.borders.thin,
+                                                font_size=10,
+                                                wrap_text=False,
+                                                shrink_to_fit=False))
+        sf.apply_style_by_indexes(indexes_to_style=sf[sf['SACADO'] == 'TOTAL'],styler_obj=Styler(bold=True, font_size=10))
         sf.apply_headers_style(styler_obj=Styler(bold=False,
                                                 bg_color=utils.colors.grey,
                                                 border_type=utils.borders.thin,
                                                 font_size=10,
                                                 wrap_text=False,
                                                 shrink_to_fit=False))
+        
         col_width = {
             'TURMA': 32,
             'TITULO': 8,
@@ -278,17 +348,18 @@ class DataEngineer:
         sf.set_column_width_dict(col_width)
         return sf
 
-    def export_excel(self, df):
+    def _export_excel(self, df):
         """ Export the treated dataframe to a excel file """
         #+ default_save_names = self.SETTINGS['default_save_name']['incomes_table']
-        styled_table = self.format_table(df)
+        styled_table = self._format_table(df)
         styled_table.to_excel('output.xlsx').save()
         
     def run(self):
         """ Main method to treat and export the data"""
         new_data = pd.DataFrame(data=self.apply_treatment())
-        model = self.incomes_table(new_data)
-        self.export_excel(model)
+        # model = self.incomes_table(new_data)
+        model = self.comission_table(new_data)
+        self._export_excel(model)
 
 if __name__ == '__main__':
     DataEngineer().run()
