@@ -151,15 +151,6 @@ class DataEngineer:
                 
         return treated_valid
 
-    # def split_label_n_amount(self, pd_serie):
-        """ Split the payment's label and its amount in two columns."""
-        
-        df = pd_serie.str.split(pat=r'R\$', expand=True)
-        df[0] = df[0].str.strip()
-        df[1] = df[1].str.strip()
-        df[1] = df[1].apply(self._str_to_float)
-        return df[0], df[1]
-
     def to_datetime(self, pd_serie):
         pd_serie = pd.to_datetime(pd_serie ,format="%d/%M/%Y",dayfirst=True, utc=False)
         return pd_serie
