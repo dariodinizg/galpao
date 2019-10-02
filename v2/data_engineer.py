@@ -59,24 +59,59 @@ class DataEngineer:
         return row.strip().split(separator)
 
     @staticmethod
-    def get_match(row, pattern):
+    def add_negative_sign(row):
+        return row * -1
+
+    def get_match(self, pd_serie, pattern):
         """ 
         Select a value from a list that correspond to a given value, or
         returns empty if no match was found.
         PS: Assign the result to a new variable. Dont override the original
          """
-        for value in row:
-            if bool(re.search(pattern, value)):
-                return value
-        return 0
+         
+        regex = re.compile(f"({pattern})")
+        valids = []
+        for row in pd_serie:
+            invalid = []
+            row_valid = []
+            for value in row:
+                if bool(regex.search(value)):
+                    row_valid.append(value)
+                else:
+                    invalid.append(value)
+            if len(invalid) == len(row):
+                row_valid.append(0)
+            valids.append(row_valid) # Creates a nested list
 
-    @staticmethod
-    def add_negative_sign(row):
-        return row * -1
+        """
+        Since might be more than one payment of type 'parcelas' for a client, 
+        the code below check the valids list for two or more matches and rebuild the string
+        concatenating each label - colon separator - with the sum the amount of all values, 
+        thus creating one line for label and amount, keeping the dataframe consistency.
+        """
+        treated_valid = []
+        for value in valids:
+            if value != 0:
+                if len(value) == 1: 
+                    treated_valid.append(*value) # Descompact the nested list
+                else:
+                    info_to_join = []
+                    amount_to_join = []
+                    for item in value:
+                        info, amount = item.split(r'R$')
+                        info_to_join.append(info)
+                        amount_to_join.append(self._str_to_float(amount))
+                    info_joined = ','.join(info_to_join)
+                    amount_sum = sum(amount_to_join)
+                    treated_valid.append(f"{info_joined} R$ {amount_sum}")
+            else:
+                treated_valid.append(1)
+                
+        return treated_valid
 
     def get_non_match(self, pd_serie):
         """Select a value from a list that do not correspond a given regex"""
-        regex = re.compile('(ADES)|(MULT)|(PROD)|(DESC)')
+        regex = re.compile(self._regex_build())
         valids = []
         for row in pd_serie:
             invalid = []
@@ -116,8 +151,9 @@ class DataEngineer:
                 
         return treated_valid
 
-    def split_label_n_amount(self, pd_serie):
+    # def split_label_n_amount(self, pd_serie):
         """ Split the payment's label and its amount in two columns."""
+        
         df = pd_serie.str.split(pat=r'R\$', expand=True)
         df[0] = df[0].str.strip()
         df[1] = df[1].str.strip()
@@ -128,7 +164,7 @@ class DataEngineer:
         pd_serie = pd.to_datetime(pd_serie ,format="%d/%M/%Y",dayfirst=True, utc=False)
         return pd_serie
 
-    def parcelas_split_label_n_amount(self, list_obj: list):
+    def split_label_n_amount(self, list_obj: list):
         """ 
         Split the payment's label and its amount in two columns.
         It needs a different function for split label and amount since the 
@@ -138,9 +174,12 @@ class DataEngineer:
         amount_list = []
         for value in list_obj:
             if type(value) != int:
-                label,amount = value.split('R$')
-                label_list.append(label)
-                amount_list.append(amount)
+                try:
+                    label,amount = value.split('R$')
+                    label_list.append(label)
+                    amount_list.append(amount.strip())
+                except AttributeError:
+                    continue
             else:
                 label_list.append('')
                 amount_list.append(0)
@@ -164,13 +203,14 @@ class DataEngineer:
         parcelas = pd.Series(data=self.get_non_match(descritivo))
         
         # Select values of a panda.Series that match a criteria.
-        adesao = descritivo.apply(self.get_match, args=(self.PATTERNS['adesao'],))
-        producao = descritivo.apply(self.get_match, args=(self.PATTERNS['producao'],))
-        multa = descritivo.apply(self.get_match, args=(self.PATTERNS['multa'],))
-        desconto = descritivo.apply(self.get_match, args=(self.PATTERNS['desconto'],))
+        adesao = self.get_match(descritivo, self.PATTERNS['adesao'])
+        adesao = self.get_match(descritivo, self.PATTERNS['adesao'])
+        producao = self.get_match(descritivo, self.PATTERNS['producao'])
+        multa = self.get_match(descritivo, self.PATTERNS['multa'])
+        desconto = self.get_match(descritivo, self.PATTERNS['desconto'])
 
         # Split label and amount
-        _, amount_parcelas = self.parcelas_split_label_n_amount(parcelas)
+        _, amount_parcelas = self.split_label_n_amount(parcelas)
         _, amount_producao = self.split_label_n_amount(producao)
         _, amount_multa = self.split_label_n_amount(multa)
         _, amount_desconto = self.split_label_n_amount(desconto)
@@ -246,7 +286,8 @@ class DataEngineer:
                 'DATA_CREDITO':['DATA_CREDITO'],
             }
         header_df = pd.DataFrame(data=header_dict)
-        CENTAVOS = Decimal('0.01')
+        
+        CENTAVOS = Decimal('0.00')
         for turma in df['TURMA'].unique():
             turma_df = df[df['TURMA'] == turma]
             with localcontext() as ctx:
@@ -264,19 +305,13 @@ class DataEngineer:
                     'VAL_ADESAO': f"{Decimal(sum(turma_df['VAL_ADESAO'])).quantize(CENTAVOS)}".replace('.',','),
                     'DATA_CREDITO':None,
                 }
-            turma_df = turma_df.append(col_sum, ignore_index=True)
             
-            # model_df = turma_df.append(pd.Series(), ignore_index=True)
-
+            turma_df = turma_df.append(col_sum, ignore_index=True)
             model_df = model_df.append(turma_df, ignore_index=True)
             model_df = model_df.append(pd.Series(), ignore_index=True)
             model_df = model_df.append(header_df, ignore_index=True)
-            # model_df = model_df.append(schema_df.keys(), ignore_index=True)
-
-        model_df.to_excel('teste.xlsx', index=False)
-            # incluir linha vazia
-            # dar append no df model
-        # print(turma_df.head())
+        
+        model_df.drop(index=(len(model_df)-1),inplace=True)
         return model_df
 
     def incomes_table(self, df):
@@ -287,7 +322,7 @@ class DataEngineer:
         """
         sort_criteria = self.SETTINGS['sort_data']['incomes_table']
         df = df.sort_values(by=['TURMA', sort_criteria])
-        CENTAVOS = Decimal('0.01')
+        CENTAVOS = Decimal('0.00')
         with localcontext() as ctx:
             ctx.rounding = ROUND_HALF_DOWN
             col_sum = {
