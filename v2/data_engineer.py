@@ -10,10 +10,11 @@ from config_manager import ConfigManager
 
 class DataEngineer:
 
-    CONFIG_FILE = 'general_config.json'
-    SETTINGS = ConfigManager(CONFIG_FILE).settings
-    # this line will be replaced by the gui input
-    DATASET = pd.read_excel(SETTINGS['dataset'])
+    GENERAL_CONFIG_FILE = 'general_config.json'
+    SETTINGS = ConfigManager(GENERAL_CONFIG_FILE).settings
+    BUSINESS_RULES_FILE = 'business_config.json'
+    BUSINESS_RULES = ConfigManager(BUSINESS_RULES_FILE)
+    DATASET = pd.read_excel(SETTINGS['dataset'])     # this line will be replaced by the gui file input
     PATTERNS = SETTINGS['classification_patterns']
 
     def _regex_build(self):
@@ -44,7 +45,7 @@ class DataEngineer:
 
     @staticmethod
     def fill_empty(current_value, new_value):
-        """ Change empty values, considered as float, to new_value """
+        """ Change empty values to new_value """
         if str(current_value) == 'nan':
             return new_value
         return current_value

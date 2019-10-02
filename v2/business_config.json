@@ -1,0 +1,45 @@
+{   
+    "TURMAS" :
+    {
+        "2019 AC - ADOLESC - TURMA 1":{
+            "parceiro1": 0.05,
+            "parceiro2": 0.05,
+            "parceiro3": 0.05,
+            "parceiro4": 0.05
+        }, 
+        "2019 AC - ADOLESC - TURMA 2":{},
+        "2019 AC - AJA - TURMA 1":{}, 
+        "2019 AC - CRI - TURMA 1":{},
+        "2019 AC - CRI - TURMA 2":{}, 
+        "2019 AC - CRI - TURMA 3":{},
+        "2019 AÉR 1x AJA - TURMA 1":{}, 
+        "2019 AÉR 1x AJA - TURMA 2":{},
+        "2019 AÉR 1x AJA - TURMA 3":{}, 
+        "2019 AÉR 1x AJA - TURMA 4":{},
+        "2019 AÉR 1x CRI - TURMA 1":{}, 
+        "2019 AÉR ACRO 1x CRI - TURMA 2":{},
+        "2019 AÉR ACRO cri  - TURMA 1":{}, 
+        "2019 AÉREOS 2x - TURMA 1":{},
+        "2019 AÉREOS 2x - TURMA 2":{}, 
+        "2019 AÉREOS 2x - TURMA 3":{},
+        "2019 AÉREOS 2x - TURMA 4":{}, 
+        "2019 AÉREOS 2x - TURMA 5":{},
+        "2019 AÉREOS 2x - TURMA 6":{}, 
+        "2019 AÉREOS E ACROB - TURMA 1":{},
+        "2019 APDZ INICIAÇAO":{}, 
+        "2019 BRINCADEIRAS - TURMA 1":{},
+        "2019 BRINCADEIRAS - TURMA 2":{}, 
+        "2019 BRINCADEIRAS - TURMA 3":{},
+        "2019 BRINCADEIRAS - TURMA 4":{}, 
+        "2019 BRINCANDO - TURMA 1":{},
+        "2019 BRINCANDO - TURMA 2":{}, 
+        "2019 INICIAÇÃO - CRI - TURMA 1":{},
+        "2019 INICIAÇÃO - CRI - TURMA 2":{}, 
+        "2019 INICIAÇÃO AJA - TURMA 1":{},
+        "2019 PALHAÇO - 1 sem 2019":{}, 
+        "AC - ADOLESC - TURMA 1":{},
+        "AÉREOS 2x - TURMA 5":{}, 
+        "BRINCADEIRAS - TURMA 2":{},
+        "INICIAÇÃO - CRI - TURMA 2":{}
+    }
+}

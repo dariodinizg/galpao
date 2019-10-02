@@ -4,12 +4,16 @@ import os
 # print("==== BEM VINDO AO SEU ARQUIVO MAIN.PY ====")
 
 class ConfigManager:
-    # config_file = None
+    """
+    Main class for opening the json configurations file.
+    Usage:
+    settings = ConfigManager('general_config.json')
+    settings['classification_patterns']
+    """
 
     def __init__(self, config_file_json):
         self.config_file = config_file_json
         
-
     @property
     def workdir(self):
         return os.getcwd()
