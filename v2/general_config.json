@@ -1,0 +1,24 @@
+{
+    "extension":["xls", "XLS"],
+    "dataset":"/home/dariodg/Desktop/free/Galpao/ComissionApp/docs/comissabril2019.XLS",
+    "classification_patterns": {
+        "adesao":"ADES",
+        "producao": "PROD",
+        "multa": "MULT",
+        "desconto":"DESC"
+    },
+    "default_save_name": {
+        "comission_table": {
+            "file_name":"comission.xlsx",
+            "sheet_name": "comission"
+        }
+        },
+        "incomes_table": {
+            "file_name":"incomes.xlsx",
+            "sheet_name": "incomes"
+        },
+    "sort_data":{
+        "incomes_table": "VENCIMENTO"
+    }
+}
+
