@@ -13,7 +13,7 @@ class DataEngineer:
     GENERAL_CONFIG_FILE = 'general_config.json'
     SETTINGS = ConfigManager(GENERAL_CONFIG_FILE).settings
     BUSINESS_RULES_FILE = 'business_config.json'
-    BUSINESS_RULES = ConfigManager(BUSINESS_RULES_FILE)
+    BUSINESS = ConfigManager(BUSINESS_RULES_FILE).settings
     DATASET = pd.read_excel(SETTINGS['dataset'])     # this line will be replaced by the gui file input
     PATTERNS = SETTINGS['classification_patterns']
 
@@ -279,27 +279,36 @@ class DataEngineer:
             }
         header_df = pd.DataFrame(data=header_dict)
         
-        CENTAVOS = Decimal('0.00')
+        TWO_PLACES = Decimal('0.00')
         for turma in df['TURMA'].unique():
             turma_df = df[df['TURMA'] == turma]
+            sum_recebido  =  Decimal(sum(turma_df['VAL_RECEBIDO'])).quantize(TWO_PLACES)
+            sum_parcela   =  Decimal(sum(turma_df['VAL_PARCELA'])).quantize(TWO_PLACES)
+            sum_producao  =  Decimal(sum(turma_df['VAL_PRODUCAO'])).quantize(TWO_PLACES)
+            sum_multa     =  Decimal(sum(turma_df['VAL_MULTA'])).quantize(TWO_PLACES)
+            sum_descontos =  Decimal(sum(turma_df['VAL_DESCONTO'])).quantize(TWO_PLACES)
+            sum_adesao    =  Decimal(sum(turma_df['VAL_ADESAO'])).quantize(TWO_PLACES)
             with localcontext() as ctx:
                 ctx.rounding = ROUND_HALF_DOWN
                 col_sum = {
-                    'TURMA': None,
-                    'TITULO': None,
-                    'VENCIMENTO': None,
                     'SACADO': 'TOTAL',
-                    'VAL_RECEBIDO':f"{Decimal(sum(turma_df['VAL_RECEBIDO'])).quantize(CENTAVOS)}".replace('.',','),
-                    'VAL_PARCELA': f"{Decimal(sum(turma_df['VAL_PARCELA'])).quantize(CENTAVOS)}".replace('.',','),
-                    'VAL_PRODUCAO': f"{Decimal(sum(turma_df['VAL_PRODUCAO'])).quantize(CENTAVOS)}".replace('.',','),
-                    'VAL_MULTA': f"{Decimal(sum(turma_df['VAL_MULTA'])).quantize(CENTAVOS)}".replace('.',','),
-                    'VAL_DESCONTO': f"{Decimal(sum(turma_df['VAL_DESCONTO'])).quantize(CENTAVOS)}".replace('.',','),
-                    'VAL_ADESAO': f"{Decimal(sum(turma_df['VAL_ADESAO'])).quantize(CENTAVOS)}".replace('.',','),
-                    'DATA_CREDITO':None,
+                    'VAL_RECEBIDO':f"{sum_recebido}".replace('.',','),
+                    'VAL_PARCELA': f"{sum_parcela}".replace('.',','),
+                    'VAL_PRODUCAO': f"{sum_producao}".replace('.',','),
+                    'VAL_MULTA': f"{sum_multa}".replace('.',','),
+                    'VAL_DESCONTO': f"{sum_descontos}".replace('.',','),
+                    'VAL_ADESAO': f"{sum_adesao}".replace('.',','),
                 }
-            
             turma_df = turma_df.append(col_sum, ignore_index=True)
             model_df = model_df.append(turma_df, ignore_index=True)
+            if turma in self.BUSINESS['TURMAS'] and len(self.BUSINESS['TURMAS'][turma].keys()) > 0:
+                for partner in self.BUSINESS['TURMAS'][turma].keys():
+                    comission_factor = self.BUSINESS['TURMAS'][turma][partner]
+                    comission_line = {
+                        'TURMA': partner,
+                        'TITULO': (sum_parcela * Decimal(comission_factor)).quantize(TWO_PLACES),
+                    }
+                    model_df = model_df.append(comission_line, ignore_index=True)
             model_df = model_df.append(pd.Series(), ignore_index=True)
             model_df = model_df.append(header_df, ignore_index=True)
         
@@ -314,7 +323,7 @@ class DataEngineer:
         """
         sort_criteria = self.SETTINGS['sort_data']['incomes_table']
         df = df.sort_values(by=['TURMA', sort_criteria])
-        CENTAVOS = Decimal('0.00')
+        TWO_PLACES = Decimal('0.00')
         with localcontext() as ctx:
             ctx.rounding = ROUND_HALF_DOWN
             col_sum = {
@@ -322,12 +331,12 @@ class DataEngineer:
                 'TITULO': None,
                 'VENCIMENTO': None,
                 'SACADO': 'TOTAL',
-                'VAL_RECEBIDO':f"{Decimal(sum(df['VAL_RECEBIDO'])).quantize(CENTAVOS)}".replace('.',','),
-                'VAL_PARCELA': f"{Decimal(sum(df['VAL_PARCELA'])).quantize(CENTAVOS)}".replace('.',','),
-                'VAL_PRODUCAO': f"{Decimal(sum(df['VAL_PRODUCAO'])).quantize(CENTAVOS)}".replace('.',','),
-                'VAL_MULTA': f"{Decimal(sum(df['VAL_MULTA'])).quantize(CENTAVOS)}".replace('.',','),
-                'VAL_DESCONTO': f"{Decimal(sum(df['VAL_DESCONTO'])).quantize(CENTAVOS)}".replace('.',','),
-                'VAL_ADESAO': f"{Decimal(sum(df['VAL_ADESAO'])).quantize(CENTAVOS)}".replace('.',','),
+                'VAL_RECEBIDO':f"{Decimal(sum(df['VAL_RECEBIDO'])).quantize(TWO_PLACES)}".replace('.',','),
+                'VAL_PARCELA': f"{Decimal(sum(df['VAL_PARCELA'])).quantize(TWO_PLACES)}".replace('.',','),
+                'VAL_PRODUCAO': f"{Decimal(sum(df['VAL_PRODUCAO'])).quantize(TWO_PLACES)}".replace('.',','),
+                'VAL_MULTA': f"{Decimal(sum(df['VAL_MULTA'])).quantize(TWO_PLACES)}".replace('.',','),
+                'VAL_DESCONTO': f"{Decimal(sum(df['VAL_DESCONTO'])).quantize(TWO_PLACES)}".replace('.',','),
+                'VAL_ADESAO': f"{Decimal(sum(df['VAL_ADESAO'])).quantize(TWO_PLACES)}".replace('.',','),
                 'DATA_CREDITO':None,
             }
         return df.append(col_sum, ignore_index=True)

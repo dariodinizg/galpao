@@ -19,7 +19,7 @@ class TestDataEngineer(TestCase):
         self.settings = DataEngineer().SETTINGS
         self.df_file = DataEngineer().DATASET
         self.descritivo = self.df_file['descritivo']
-        self.proof = pd.read_excel('proof_model.xls', sheet_name='proof')
+        self.proof = pd.read_excel('tests/fixture/proof_model.xls', sheet_name='proof')
 
     def test_open_dataset(self):
         """ Verify if the dataset was correctly opened by the DataEngineer class """
@@ -77,38 +77,23 @@ class TestDataEngineer(TestCase):
         string_proof = f'{self.proof["valor_adesao"][1]}' # corrects excel auto formating
         self.assertEqual(test_df[1][3], string_proof)
 
-    @skip('teste')
-    def test_parcelas_split_label_n_amount(self):
-        """ Test for split_label_n_amount method, based in the information for column adesao"""
-        treated_descritivo = self.setup_descritivo()
-        patterns = self.settings['classification_patterns']
-        adesao = treated_descritivo.apply(self.engineer.get_match, args=(patterns['adesao'],))
-        test_df = self.engineer.split_label_n_amount(adesao)
-        self.assertEqual(test_df[0][3], self.proof['info_adesao'][1])
-    
-    @skip('teste')
+    # @skip('teste')
     def test_add_negative_sign(self):
         treated_descritivo = self.setup_descritivo()
         patterns = self.settings['classification_patterns']
-        descontos = treated_descritivo.apply(self.engineer.get_match, args=(patterns['desconto'],))
-        test_df = self.engineer.split_label_n_amount(descontos)
-        amount_desconto = test_df[1].apply(self.engineer.add_negative_sign)
-        self.assertEqual(amount_desconto[213], -97.5)
+        descontos = self.engineer.get_match(treated_descritivo, patterns['desconto'])
+        descontos = self.engineer.split_label_n_amount(descontos)
+        value = self.engineer.add_negative_sign(descontos[1][213])
+        self.assertEqual(value, -97.5)
 
-    @skip('teste')
+    # @skip('teste')
     def test_rounding(self):
         data = self.engineer.apply_treatment()
         df = self.engineer.incomes_table(data)
         total_recebido = df['VAL_RECEBIDO'].iloc[-1]
         self.assertEqual(total_recebido, '80863,75')
 
-    # def test_to_datetime(self):
-    #     data = self.engineer.apply_treatment()
-    #     df = self.engineer.incomes_table(data)
-    #     print(df['VENCIMENTO'][1])
-    #     self.assertTrue(isinstance(df['VENCIMENTO'][1], datetime))
-    
-    @skip('teste')
+    # @skip('teste')
     def test_new_dataframe_consistency(self):
         df_model = pd.DataFrame(data=self.engineer.apply_treatment())
         parameter = len(self.df_file['titulo'])

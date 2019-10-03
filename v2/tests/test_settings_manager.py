@@ -13,7 +13,3 @@ class TestMain(TestCase):
 
     def test_open_config(self):
         self.assertTrue(len(self.CONFIG_FILE.keys())>0)
-
-    @skip('created just to check the cwd')
-    def test_cwd(self):
-        self.assertEqual(self.FILE_MANAGER.workdir,'')

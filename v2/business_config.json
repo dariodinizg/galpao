@@ -2,10 +2,8 @@
     "TURMAS" :
     {
         "2019 AC - ADOLESC - TURMA 1":{
-            "parceiro1": 0.05,
-            "parceiro2": 0.05,
-            "parceiro3": 0.05,
-            "parceiro4": 0.05
+            "parceiro1": 0.5,
+            "parceiro2": 0.1
         }, 
         "2019 AC - ADOLESC - TURMA 2":{},
         "2019 AC - AJA - TURMA 1":{}, 
