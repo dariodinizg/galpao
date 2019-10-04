@@ -1,10 +1,9 @@
 {   
-    "TURMAS" :
-    {
+    "TURMAS" : {
         "2019 AC - ADOLESC - TURMA 1":{
             "parceiro1": 0.5,
             "parceiro2": 0.1
-        }, 
+            }, 
         "2019 AC - ADOLESC - TURMA 2":{},
         "2019 AC - AJA - TURMA 1":{}, 
         "2019 AC - CRI - TURMA 1":{},
@@ -37,7 +36,14 @@
         "2019 PALHAÇO - 1 sem 2019":{}, 
         "AC - ADOLESC - TURMA 1":{},
         "AÉREOS 2x - TURMA 5":{}, 
-        "BRINCADEIRAS - TURMA 2":{},
-        "INICIAÇÃO - CRI - TURMA 2":{}
-    }
+        "BRINCADEIRAS - TURMA 2":{
+            "parceiro1": 0.5,
+            "parceiro2": 0.1
+            },
+        "INICIAÇÃO - CRI - TURMA 2":{
+            "parceiro1": 0.5,
+            "parceiro2": 0.1
+            }
+    },
+    "fator_multa": 0.1
 }

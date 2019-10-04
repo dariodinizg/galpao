@@ -15,9 +15,9 @@ class TestDataEngineer(TestCase):
     """
 
     def setUp(self):
-        self.engineer = DataEngineer()
-        self.settings = DataEngineer().SETTINGS
-        self.df_file = DataEngineer().DATASET
+        self.engineer = DataEngineer('comission_abril.XLS', "01/02/2019 a 30/01/2019")
+        self.settings = self.engineer.SETTINGS
+        self.df_file = self.engineer.dataset
         self.descritivo = self.df_file['descritivo']
         self.proof = pd.read_excel('tests/fixture/proof_model.xls', sheet_name='proof')
 
