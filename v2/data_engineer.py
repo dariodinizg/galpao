@@ -1,7 +1,7 @@
 import pandas as pd
 import json
 import re
-from decimal import Decimal, ROUND_HALF_DOWN, localcontext
+from decimal import Decimal, ROUND_HALF_DOWN, localcontext, ROUND_DOWN
 from StyleFrame import StyleFrame, Styler, utils
 from datetime import datetime
 
@@ -156,7 +156,7 @@ class DataEngineer:
         return treated_valid
 
     def to_datetime(self, pd_serie):
-        pd_serie = pd.to_datetime(pd_serie ,format="%d/%M/%Y",dayfirst=True, utc=False)
+        pd_serie = pd.to_datetime(pd_serie ,format=r"%d/%m/%Y",dayfirst=True, utc=False)
         return pd_serie
 
     def split_label_n_amount(self, list_obj: list):
@@ -325,13 +325,15 @@ class DataEngineer:
             model_df = model_df.append(date_line, ignore_index=True)
 
             if turma in self.BUSINESS['TURMAS'] and len(self.BUSINESS['TURMAS'][turma].keys()) > 0:
-                for partner in self.BUSINESS['TURMAS'][turma].keys():
-                    comission_factor = self.BUSINESS['TURMAS'][turma][partner]
-                    comission_line = {
-                        'TURMA': partner,
-                        'TITULO':self._str_to_float(((sum_parcela + sum_comission_multas)* Decimal(comission_factor)).quantize(TWO_PLACES)),
-                    }
-                    model_df = model_df.append(comission_line, ignore_index=True)
+                with localcontext() as ctx:
+                    ctx.rounding = ROUND_HALF_DOWN
+                    for partner in self.BUSINESS['TURMAS'][turma].keys():
+                        comission_factor = Decimal(self.BUSINESS['TURMAS'][turma][partner])
+                        comission_line = {
+                            'TURMA': partner,
+                            'TITULO':self._str_to_float(((sum_parcela + sum_comission_multas)* Decimal(comission_factor)).quantize(TWO_PLACES)),
+                        }
+                        model_df = model_df.append(comission_line, ignore_index=True)
             model_df = model_df.append(pd.Series(), ignore_index=True)
             model_df = model_df.append(header_df, ignore_index=True)
         model_df.drop('comission_multas', axis=1, inplace=True)
@@ -374,7 +376,7 @@ class DataEngineer:
     def _format_table(self, df):
         sort_criteria = self.SETTINGS['sort_data']['incomes_table']
         excel_format = df[sort_criteria].apply(
-            lambda value: f"{value.date().strftime('%d/%m/%Y')}" 
+            lambda value: f"{value.date().strftime(r'%d/%m/%Y')}" 
             if f"{type(value)}" == "<class 'pandas._libs.tslibs.timestamps.Timestamp'>"
             else value)
         df[sort_criteria] = excel_format
@@ -387,7 +389,6 @@ class DataEngineer:
                                                 font_size=10,
                                                 wrap_text=False,
                                                 shrink_to_fit=False))
-        # sf.apply_style_by_indexes(indexes_to_style=,styler_obj=Styler(font_size=10, bold=True))
         sf.apply_style_by_indexes(indexes_to_style=sf[sf['SACADO'] == 'TOTAL'],styler_obj=Styler(font_size=10, bold=True))
         sf.apply_headers_style(styler_obj=Styler(bold=False,
                                                 bg_color=utils.colors.grey,
