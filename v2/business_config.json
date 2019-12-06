@@ -1,49 +1,128 @@
 {   
     "TURMAS" : {
-        "2019 AC - ADOLESC - TURMA 1":{
-            "parceiro1": 0.5,
-            "parceiro2": 0.1
+        "2019 - ACROBACIA":{
+            "Alan": 0.4
             }, 
-        "2019 AC - ADOLESC - TURMA 2":{},
-        "2019 AC - AJA - TURMA 1":{}, 
-        "2019 AC - CRI - TURMA 1":{},
-        "2019 AC - CRI - TURMA 2":{}, 
-        "2019 AC - CRI - TURMA 3":{},
-        "2019 AÉR 1x AJA - TURMA 1":{}, 
-        "2019 AÉR 1x AJA - TURMA 2":{},
-        "2019 AÉR 1x AJA - TURMA 3":{}, 
-        "2019 AÉR 1x AJA - TURMA 4":{},
-        "2019 AÉR 1x CRI - TURMA 1":{}, 
-        "2019 AÉR ACRO 1x CRI - TURMA 2":{},
-        "2019 AÉR ACRO cri  - TURMA 1":{}, 
-        "2019 AÉREOS 2x - TURMA 1":{},
-        "2019 AÉREOS 2x - TURMA 2":{}, 
-        "2019 AÉREOS 2x - TURMA 3":{},
-        "2019 AÉREOS 2x - TURMA 4":{}, 
-        "2019 AÉREOS 2x - TURMA 5":{},
-        "2019 AÉREOS 2x - TURMA 6":{}, 
-        "2019 AÉREOS E ACROB - TURMA 1":{},
-        "2019 APDZ INICIAÇAO":{}, 
-        "2019 BRINCADEIRAS - TURMA 1":{},
-        "2019 BRINCADEIRAS - TURMA 2":{}, 
-        "2019 BRINCADEIRAS - TURMA 3":{},
-        "2019 BRINCADEIRAS - TURMA 4":{}, 
-        "2019 BRINCANDO - TURMA 1":{},
-        "2019 BRINCANDO - TURMA 2":{}, 
-        "2019 INICIAÇÃO - CRI - TURMA 1":{},
-        "2019 INICIAÇÃO - CRI - TURMA 2":{}, 
-        "2019 INICIAÇÃO AJA - TURMA 1":{},
-        "2019 PALHAÇO - 1 sem 2019":{}, 
-        "AC - ADOLESC - TURMA 1":{},
-        "AÉREOS 2x - TURMA 5":{}, 
-        "BRINCADEIRAS - TURMA 2":{
-            "parceiro1": 0.5,
-            "parceiro2": 0.1
-            },
-        "INICIAÇÃO - CRI - TURMA 2":{
-            "parceiro1": 0.5,
-            "parceiro2": 0.1
-            }
+        "2019 AC - ADOLESC - TURMA 1":{
+            "Leo": 0.09375,
+            "Flora": 0.09375,
+            "Maria": 0.09375,
+            "Rebeca": 0.09375
+        },
+        "2019 AC - ADOLESC - TURMA 2":{
+            "Luka": 0.09375,
+            "Flora": 0.09375,
+            "Maria": 0.09375,
+            "Rebeca": 0.09375
+        },
+        "2019 AC - AJA - TURMA 1":{
+            "Alex": 0.1875,
+            "Maria": 0.09375,
+            "Rebeca": 0.09375
+        },
+        "2019 AC - AJA - TURMA 2":{
+            "Leo": 0.1875,
+            "Isa": 0.09375
+        }, 
+        "2019 AC - CRI - TURMA 1":{
+            "Rebeca": 0.1875,
+            "Alex": 0.09375,
+            "Flora": 0.09375
+        },
+        "2019 AC - CRI - TURMA 2":{
+            "Alex": 0.09375,
+            "Flora": 0.09375,
+            "Maria": 0.09375,
+            "Rebeca": 0.09375
+        },
+        "2019 AC - CRI - TURMA 3":{
+            "Alex": 0.1875,
+            "Rebeca": 0.1875
+        },
+        "2019 AÉR 1x AJA - TURMA 1":{
+            "Dani": 0.25
+        },
+        "2019 AÉR 1x AJA - TURMA 2":{
+            "Dani": 0.25
+        },
+        "2019 AÉR 1x AJA - TURMA 3":{
+            "Suga": 0.25
+        },
+        "2019 AÉR 1x AJA - TURMA 4":{
+            "Dani": 0.25
+        },
+        "2019 AÉR 1x CRI - TURMA 1":{
+            "Rebeca": 0.25,
+            "Tati": 0.15
+        }, 
+        "2019 AÉReACRO 1x CRI - TURMA 1":{
+            "Leo": 0.15,
+            "Isa": 0.15
+        },
+        "2019 AÉReACRO 1x CRI - TURMA 2":{
+            "Rebeca": 0.25
+        }, 
+        "2019 AÉREOS 2x - TURMA 1":{
+            "Mari Duarte": 0.3
+        },
+        "2019 AÉREOS 2x - TURMA 2":{
+            "Mari Duarte": 0.3
+        },
+        "2019 AÉREOS 2x - TURMA 3":{
+            "Vero": 0.1875,
+            "Marina": 0.1875
+        }, 
+        "2019 AÉREOS 2x - TURMA 4":{
+            "Ana": 0.25,
+            "Isa": 0.10
+        }, 
+        "2019 AÉREOS 2x - TURMA 5":{
+            "Isa": 0.30
+        }, 
+        "2019 AÉREOS 2x - TURMA 6":{
+            "Dani": 0.25
+        }, 
+        "2019 AÉREOS E ACROB - TURMA 1":{
+            "Suga": 0.25
+        }, 
+        "2019 BRINCADEIRAS - TURMA 1":{
+            "Celia": 0.20,
+            "Vitoria": 0.10
+        }, 
+        "2019 BRINCADEIRAS - TURMA 2":{
+            "Celia": 0.25,
+            "Renatinha": 0.125
+        },  
+        "2019 BRINCADEIRAS - TURMA 3":{
+            "Tati": 0.25,
+            "Renatinha": 0.125
+        },
+        "2019 BRINCADEIRAS - TURMA 4":{
+            "Renatinha": 0.20,
+            "Tati": 0.10
+        },  
+        "2019 BRINCANDO - TURMA 1":{
+            "Celia": 0.25,
+            "Tati": 0.125
+        }, 
+        "2019 BRINCANDO - TURMA 2":{
+            "Celia": 0.25,
+            "Tati": 0.125
+        }, 
+        "2019 INICIAÇÃO - CRI - TURMA 1":{
+            "Celia": 0.25,
+            "Renatinha": 0.125
+        }, 
+        "2019 INICIAÇÃO - CRI - TURMA 2":{
+            "Tati": 0.25,
+            "Pamella": 0.125
+        },  
+        "2019 INICIAÇÃO AJA - TURMA 1":{
+            "Leo": 0.3
+        }, 
+        "2019 PALHAÇO - 1 sem 2019":{
+            "Paola": 0.5
+        }
     },
     "fator_multa": 0.1
 }

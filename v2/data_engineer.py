@@ -319,7 +319,8 @@ class DataEngineer:
             turma_df = turma_df.append(col_sum, ignore_index=True)
             model_df = model_df.append(turma_df, ignore_index=True)
             date_line = {
-                    'TURMA': f"Periodo: {self.comission_date}"
+                    'TURMA': f"Periodo: {self.comission_date}",
+                    'TITULO': "R$"
             }
             model_df = model_df.append(date_line, ignore_index=True)
 
@@ -328,13 +329,13 @@ class DataEngineer:
                     comission_factor = self.BUSINESS['TURMAS'][turma][partner]
                     comission_line = {
                         'TURMA': partner,
-                        'TITULO': ((sum_parcela + sum_comission_multas)* Decimal(comission_factor)).quantize(TWO_PLACES),
+                        'TITULO':self._str_to_float(((sum_parcela + sum_comission_multas)* Decimal(comission_factor)).quantize(TWO_PLACES)),
                     }
                     model_df = model_df.append(comission_line, ignore_index=True)
             model_df = model_df.append(pd.Series(), ignore_index=True)
             model_df = model_df.append(header_df, ignore_index=True)
-        model_df.drop('comission_multas', axis=1)
-        model_df.drop(index=(len(model_df)-1),inplace=True)
+        model_df.drop('comission_multas', axis=1, inplace=True)
+        model_df.drop(index=(len(model_df)-1), inplace=True)
         return model_df
 
     def incomes_table(self, df):
