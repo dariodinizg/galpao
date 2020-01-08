@@ -83,13 +83,10 @@ class AppGui:
     
     def execute_button(self):
         try:
-            bool(self.filename)
+            de = DataEngineer(self.filename, *self.get_comission_date())
+            # bool(self.filename)
         except AttributeError:
             self.label_aviso.config(text='Erro ao ler arquivo CSV', bg='white', fg='red')
-        try:
-            de = DataEngineer(self.filename, *self.get_comission_date())
-        except:
-            self.label_aviso.config(text='Formato de datas inválido', bg='white', fg='red')
         export_comission = False
         export_incomes = False
         comission_button = self.button_income_table.getvar('PY_VAR0')
@@ -107,8 +104,11 @@ class AppGui:
     def get_comission_date(self):
         start_date = self.start_date_input.get()
         end_date = self.end_date_input.get()
-        self.start_date = datetime.strptime(start_date, '%d/%m/%Y').date()
-        self.end_date = datetime.strptime(end_date, '%d/%m/%Y').date()
+        try:
+            self.start_date = datetime.strptime(start_date, '%d/%m/%Y').date()
+            self.end_date = datetime.strptime(end_date, '%d/%m/%Y').date()
+        except ValueError:
+            self.label_aviso.config(text='Formato de datas inválido', bg='white', fg='red')
         return start_date, end_date
 
     def load_configuration(self):
