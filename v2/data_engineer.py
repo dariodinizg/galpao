@@ -7,6 +7,11 @@ from datetime import datetime
 
 from config_manager import ConfigManager
 
+class Warning:
+    def __init__(self, text, bg, fg):
+        self.text = text
+        self.bg = bg
+        self.fg = fg
 
 class DataEngineer:
 
@@ -14,10 +19,12 @@ class DataEngineer:
     BUSINESS = ConfigManager('business_config.json').settings
     PATTERNS = SETTINGS['classification_patterns']
 
+
     def __init__(self, filename_xls, start_date, end_date):
         self.dataset = pd.read_excel(filename_xls)
         self.start_date = datetime.strptime(start_date, '%d/%m/%Y').date()
         self.end_date = datetime.strptime(end_date, '%d/%m/%Y').date()
+        self.app_warning = Warning(text='Formato de data inválido', bg='white', fg='red')
         self.comission_date = f"{self.start_date.strftime('%d/%m/%Y')} a {self.end_date.strftime('%d/%m/%Y')}"
 
     def _regex_build(self):
@@ -26,6 +33,7 @@ class DataEngineer:
         for pattern in self.PATTERNS.values():
             all_patterns.append(f'({pattern})')
         return '|'.join(all_patterns)
+
 
     @staticmethod
     def _str_to_float(float_string):
@@ -235,30 +243,46 @@ class DataEngineer:
        
         treated_df = {
             'TURMA': turmas,
-            'TITULO': self.dataset['titulo'],
             'VENCIMENTO': vencimento,
+            'TITULO': self.dataset['titulo'],
             'SACADO': self.dataset['sacado'],
+            'VAL_COMISSAO': 0,
+            'DATA_CREDITO': credito,
             'VAL_RECEBIDO':self.dataset['recebido'],
             'VAL_PARCELA': amount_parcelas,
             'VAL_PRODUCAO': amount_producao,
             'VAL_MULTA': amount_multa,
             'VAL_DESCONTO': amount_desconto,
             'VAL_ADESAO': amount_adesao,
-            'DATA_CREDITO': credito,
         }
         pd.DataFrame(treated_df)
-        col_multas_comission = pd.Series(data=self.comission_multas(treated_df))
-        treated_df['comission_multas'] = col_multas_comission
+        # col_multas_comission = pd.Series(data=self.comission_multas(treated_df))
+        # treated_df['comission_multas'] = col_multas_comission
+        col_comission_values = pd.Series(data=self.comission_value(treated_df))
+        treated_df['VAL_COMISSAO'] = col_comission_values.apply(self._str_to_float)
         return treated_df
 
     def comission_multas(self, df):
         fator_multa = self.BUSINESS['fator_multa']
         values = []
-        for parcela, vencimento in zip(df['VAL_PARCELA'], df['VENCIMENTO']):
-            if bool(parcela) and vencimento < self.start_date:
+        for parcela, vencimento, multa in zip(df['VAL_PARCELA'], df['VENCIMENTO'], df['VAL_MULTA']):
+            if bool(parcela) and bool(multa) and vencimento < self.start_date:
                 values.append(Decimal(parcela * fator_multa).quantize(Decimal('0.00')))
             else:
                 values.append(0)
+        return values
+
+    def comission_value(self,df):
+        fator_multa = self.BUSINESS['fator_multa']
+        values = []
+        for parcela, vencimento, multa in zip(df['VAL_PARCELA'], df['VENCIMENTO'], df['VAL_MULTA']):
+            if bool(parcela) and bool(multa) and vencimento < self.start_date:
+                parcela_comissioned = Decimal(parcela) + Decimal(parcela * fator_multa).quantize(Decimal('0.00'))
+            elif bool(parcela):
+                parcela_comissioned = Decimal(parcela).quantize(Decimal('0.00'))
+            else:
+                parcela_comissioned = Decimal("0")
+            values.append(parcela_comissioned)
         return values
 
     def comission_table(self, df):
@@ -266,49 +290,53 @@ class DataEngineer:
         df = df.sort_values(by=['TURMA', sort_criteria])
         header_dict = {
                 'TURMA':['TURMA'] ,
-                'TITULO': ['TITULO'],
                 'VENCIMENTO': ['VENCIMENTO'],
+                'TITULO': ['TITULO'],
                 'SACADO': ['SACADO'],
+                'VAL_COMISSAO': ['VAL_COMISSAO'],
+                'DATA_CREDITO':['DATA_CREDITO'],
                 'VAL_RECEBIDO':['VAL_RECEBIDO'],
                 'VAL_PARCELA': ['VAL_PARCELA'],
                 'VAL_PRODUCAO': ['VAL_PRODUCAO'],
                 'VAL_MULTA': ['VAL_MULTA'],
                 'VAL_DESCONTO': ['VAL_DESCONTO'],
-                'VAL_ADESAO': ['VAL_ADESAO'],
-                'DATA_CREDITO':['DATA_CREDITO'],
-                'comission_multas':['comission_multas']
+                'VAL_ADESAO': ['VAL_ADESAO']
+                # 'comission_multas':['comission_multas']
             }
         header_df = pd.DataFrame(data=header_dict)
         schema_df = {
                 'TURMA':[] ,
-                'TITULO': [],
                 'VENCIMENTO': [],
+                'TITULO': [],
                 'SACADO': [],
+                'VAL_COMISSAO': [],
+                'DATA_CREDITO':[],
                 'VAL_RECEBIDO':[],
                 'VAL_PARCELA': [],
                 'VAL_PRODUCAO': [],
                 'VAL_MULTA': [],
                 'VAL_DESCONTO': [],
-                'VAL_ADESAO': [],
-                'DATA_CREDITO':[],
-                'comission_multas':[]
+                'VAL_ADESAO': []
+                # 'comission_multas':[]
             }
         model_df = pd.DataFrame(data=schema_df)
         
         TWO_PLACES = Decimal('0.00')
         for turma in df['TURMA'].unique():
             turma_df = df[df['TURMA'] == turma]
+            sum_comissao  =  Decimal(sum(turma_df['VAL_COMISSAO'])).quantize(TWO_PLACES)
             sum_recebido  =  Decimal(sum(turma_df['VAL_RECEBIDO'])).quantize(TWO_PLACES)
             sum_parcela   =  Decimal(sum(turma_df['VAL_PARCELA'])).quantize(TWO_PLACES)
             sum_producao  =  Decimal(sum(turma_df['VAL_PRODUCAO'])).quantize(TWO_PLACES)
             sum_multa     =  Decimal(sum(turma_df['VAL_MULTA'])).quantize(TWO_PLACES)
             sum_descontos =  Decimal(sum(turma_df['VAL_DESCONTO'])).quantize(TWO_PLACES)
             sum_adesao    =  Decimal(sum(turma_df['VAL_ADESAO'])).quantize(TWO_PLACES)
-            sum_comission_multas = Decimal(sum(turma_df['comission_multas'])).quantize(TWO_PLACES)
+            # sum_comission_multas = Decimal(sum(turma_df['comission_multas'])).quantize(TWO_PLACES)
             with localcontext() as ctx:
                 ctx.rounding = ROUND_HALF_DOWN
                 col_sum = {
                     'SACADO': 'TOTAL',
+                    'VAL_COMISSAO': self._str_to_float(sum_comissao),
                     'VAL_RECEBIDO': self._str_to_float(sum_recebido),
                     'VAL_PARCELA': self._str_to_float(sum_parcela),
                     'VAL_PRODUCAO': self._str_to_float(sum_producao),
@@ -320,7 +348,7 @@ class DataEngineer:
             model_df = model_df.append(turma_df, ignore_index=True)
             date_line = {
                     'TURMA': f"Periodo: {self.comission_date}",
-                    'TITULO': "R$"
+                    'VENCIMENTO': "R$"
             }
             model_df = model_df.append(date_line, ignore_index=True)
 
@@ -331,12 +359,12 @@ class DataEngineer:
                         comission_factor = Decimal(self.BUSINESS['TURMAS'][turma][partner])
                         comission_line = {
                             'TURMA': partner,
-                            'TITULO':self._str_to_float(((sum_parcela + sum_comission_multas)* Decimal(comission_factor)).quantize(TWO_PLACES)),
+                            'VENCIMENTO':self._str_to_float((Decimal(sum_comissao) * Decimal(comission_factor)).quantize(TWO_PLACES)),
                         }
                         model_df = model_df.append(comission_line, ignore_index=True)
             model_df = model_df.append(pd.Series(), ignore_index=True)
             model_df = model_df.append(header_df, ignore_index=True)
-        model_df.drop('comission_multas', axis=1, inplace=True)
+        # model_df.drop('comission_multas', axis=1, inplace=True)
         model_df.drop(index=(len(model_df)-1), inplace=True)
         return model_df
 
@@ -401,6 +429,7 @@ class DataEngineer:
             'TITULO': 8,
             'VENCIMENTO': 12,
             'SACADO': 34,
+            'VAL_COMISSAO': 12,
             'VAL_RECEBIDO':13.2,
             'VAL_PARCELA': 12,
             'VAL_PRODUCAO': 12,
@@ -414,7 +443,6 @@ class DataEngineer:
 
     def _export_excel(self, df, filename):
         """ Export the treated dataframe to a excel file """
-        #+ default_save_names = self.SETTINGS['default_save_name']['incomes_table']
         styled_table = self._format_table(df)
         styled_table.to_excel(filename).save()
         
@@ -423,11 +451,12 @@ class DataEngineer:
         new_data = pd.DataFrame(data=self.apply_treatment())
         if export_incomes is True:
             income_table = self.incomes_table(new_data)
-            self._export_excel(income_table, 'incomes.xls')
+            self._export_excel(income_table, f'receitas_{self.start_date.strftime("%d_%m_%Y")}_a_{self.end_date.strftime("%d_%m_%Y")}.xls')
+            self.app_warning = Warning(text='Arquivo gerado com sucesso', bg='white', fg='green')
         if export_comission is True:
             comission_table = self.comission_table(new_data)
-            self._export_excel(comission_table, 'comissions.xls')
-
+            self._export_excel(comission_table, f'comissao_{self.start_date.strftime("%d_%m_%Y")}_a_{self.end_date.strftime("%d_%m_%Y")}.xls')
+            self.app_warning = Warning(text='Arquivo gerado com sucesso', bg='white', fg='green')
 
 # if __name__ == "__main__":
     # DataEngineer('comission_abril.XLS', "01/01/2019", "30/01/2019").run(export_comission=True, export_incomes=False)
