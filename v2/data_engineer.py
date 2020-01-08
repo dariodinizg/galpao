@@ -1,20 +1,31 @@
 import pandas as pd
 import json
 import re
-from decimal import Decimal, ROUND_HALF_DOWN, localcontext
+from decimal import Decimal, ROUND_HALF_DOWN, localcontext, ROUND_DOWN
 from StyleFrame import StyleFrame, Styler, utils
 from datetime import datetime
 
 from config_manager import ConfigManager
 
+class Warning:
+    def __init__(self, text, bg, fg):
+        self.text = text
+        self.bg = bg
+        self.fg = fg
 
 class DataEngineer:
 
-    CONFIG_FILE = 'general_config.json'
-    SETTINGS = ConfigManager(CONFIG_FILE).settings
-    # this line will be replaced by the gui input
-    DATASET = pd.read_excel(SETTINGS['dataset'])
+    SETTINGS = ConfigManager('general_config.json').settings
+    BUSINESS = ConfigManager('business_config.json').settings
     PATTERNS = SETTINGS['classification_patterns']
+
+
+    def __init__(self, filename_xls, start_date, end_date):
+        self.dataset = pd.read_excel(filename_xls)
+        self.start_date = datetime.strptime(start_date, '%d/%m/%Y').date()
+        self.end_date = datetime.strptime(end_date, '%d/%m/%Y').date()
+        self.app_warning = Warning(text='Formato de data inválido', bg='white', fg='red')
+        self.comission_date = f"{self.start_date.strftime('%d/%m/%Y')} a {self.end_date.strftime('%d/%m/%Y')}"
 
     def _regex_build(self):
         """Builds a regex for get_non_match method. Ex: '(ADES)|(MULT)|(PROD)'."""
@@ -22,6 +33,7 @@ class DataEngineer:
         for pattern in self.PATTERNS.values():
             all_patterns.append(f'({pattern})')
         return '|'.join(all_patterns)
+
 
     @staticmethod
     def _str_to_float(float_string):
@@ -44,13 +56,13 @@ class DataEngineer:
 
     @staticmethod
     def fill_empty(current_value, new_value):
-        """ Change empty values, considered as float, to new_value """
+        """ Change empty values to new_value """
         if str(current_value) == 'nan':
             return new_value
         return current_value
 
     @staticmethod
-    def str_normalize(row):
+    def str_upper(row):
         return row.upper()
     
     @staticmethod
@@ -152,7 +164,7 @@ class DataEngineer:
         return treated_valid
 
     def to_datetime(self, pd_serie):
-        pd_serie = pd.to_datetime(pd_serie ,format="%d/%M/%Y",dayfirst=True, utc=False)
+        pd_serie = pd.to_datetime(pd_serie ,format=r"%d/%m/%Y",dayfirst=True, utc=False)
         return pd_serie
 
     def split_label_n_amount(self, list_obj: list):
@@ -183,11 +195,10 @@ class DataEngineer:
         """
 
         # Column 'turma' treatment
-        # turmas = self.DATASET['turma'].apply(self.fill_empty, args=('sem_turma',))
-        turmas = self.DATASET['turma'].fillna('sem_turma')
+        turmas = self.dataset['turma'].fillna('sem_turma')
 
         # Normalize descritivo column and split each line row string in a list of values.
-        descritivo = self.DATASET['descritivo'].apply(self.str_normalize)
+        descritivo = self.dataset['descritivo'].apply(self.str_upper)
         descritivo = descritivo.apply(self.strip_n_split, args=('\n',))
 
         # Select values of a panda.Series that dont match a criteria.
@@ -227,82 +238,134 @@ class DataEngineer:
         Convert the date columns to datetime elements and change credito column to string
         in order for the excel to correct display it
         """
-        vencimento = self.to_datetime(self.DATASET['vencimento'])
-        credito = self.to_datetime(self.DATASET['credito']).apply(lambda date_string: f"{date_string.date().strftime('%d/%m/%Y')}")
-        
-        
+        vencimento = self.to_datetime(self.dataset['vencimento'])
+        credito = self.to_datetime(self.dataset['credito']).apply(lambda date_string: f"{date_string.date().strftime('%d/%m/%Y')}")
+       
         treated_df = {
             'TURMA': turmas,
-            'TITULO': self.DATASET['titulo'],
             'VENCIMENTO': vencimento,
-            'SACADO': self.DATASET['sacado'],
-            'VAL_RECEBIDO':self.DATASET['recebido'],
+            'TITULO': self.dataset['titulo'],
+            'SACADO': self.dataset['sacado'],
+            'VAL_COMISSAO': 0,
+            'DATA_CREDITO': credito,
+            'VAL_RECEBIDO':self.dataset['recebido'],
             'VAL_PARCELA': amount_parcelas,
             'VAL_PRODUCAO': amount_producao,
             'VAL_MULTA': amount_multa,
             'VAL_DESCONTO': amount_desconto,
             'VAL_ADESAO': amount_adesao,
-            'DATA_CREDITO': credito,
         }
-        return pd.DataFrame(treated_df)
+        pd.DataFrame(treated_df)
+        # col_multas_comission = pd.Series(data=self.comission_multas(treated_df))
+        # treated_df['comission_multas'] = col_multas_comission
+        col_comission_values = pd.Series(data=self.comission_value(treated_df))
+        treated_df['VAL_COMISSAO'] = col_comission_values.apply(self._str_to_float)
+        return treated_df
+
+    def comission_multas(self, df):
+        fator_multa = self.BUSINESS['fator_multa']
+        values = []
+        for parcela, vencimento, multa in zip(df['VAL_PARCELA'], df['VENCIMENTO'], df['VAL_MULTA']):
+            if bool(parcela) and bool(multa) and vencimento < self.start_date:
+                values.append(Decimal(parcela * fator_multa).quantize(Decimal('0.00')))
+            else:
+                values.append(0)
+        return values
+
+    def comission_value(self,df):
+        fator_multa = self.BUSINESS['fator_multa']
+        values = []
+        for parcela, vencimento, multa in zip(df['VAL_PARCELA'], df['VENCIMENTO'], df['VAL_MULTA']):
+            if bool(parcela) and bool(multa) and vencimento < self.start_date:
+                parcela_comissioned = Decimal(parcela) + Decimal(parcela * fator_multa).quantize(Decimal('0.00'))
+            elif bool(parcela):
+                parcela_comissioned = Decimal(parcela).quantize(Decimal('0.00'))
+            else:
+                parcela_comissioned = Decimal("0")
+            values.append(parcela_comissioned)
+        return values
 
     def comission_table(self, df):
         sort_criteria = self.SETTINGS['sort_data']['incomes_table']
         df = df.sort_values(by=['TURMA', sort_criteria])
-        schema_df = {
-                'TURMA':[] ,
-                'TITULO': [],
-                'VENCIMENTO': [],
-                'SACADO': [],
-                'VAL_RECEBIDO':[],
-                'VAL_PARCELA': [],
-                'VAL_PRODUCAO': [],
-                'VAL_MULTA': [],
-                'VAL_DESCONTO': [],
-                'VAL_ADESAO': [],
-                'DATA_CREDITO':[],
-            }
-        model_df = pd.DataFrame(data=schema_df)
         header_dict = {
                 'TURMA':['TURMA'] ,
-                'TITULO': ['TITULO'],
                 'VENCIMENTO': ['VENCIMENTO'],
+                'TITULO': ['TITULO'],
                 'SACADO': ['SACADO'],
+                'VAL_COMISSAO': ['VAL_COMISSAO'],
+                'DATA_CREDITO':['DATA_CREDITO'],
                 'VAL_RECEBIDO':['VAL_RECEBIDO'],
                 'VAL_PARCELA': ['VAL_PARCELA'],
                 'VAL_PRODUCAO': ['VAL_PRODUCAO'],
                 'VAL_MULTA': ['VAL_MULTA'],
                 'VAL_DESCONTO': ['VAL_DESCONTO'],
-                'VAL_ADESAO': ['VAL_ADESAO'],
-                'DATA_CREDITO':['DATA_CREDITO'],
+                'VAL_ADESAO': ['VAL_ADESAO']
+                # 'comission_multas':['comission_multas']
             }
         header_df = pd.DataFrame(data=header_dict)
+        schema_df = {
+                'TURMA':[] ,
+                'VENCIMENTO': [],
+                'TITULO': [],
+                'SACADO': [],
+                'VAL_COMISSAO': [],
+                'DATA_CREDITO':[],
+                'VAL_RECEBIDO':[],
+                'VAL_PARCELA': [],
+                'VAL_PRODUCAO': [],
+                'VAL_MULTA': [],
+                'VAL_DESCONTO': [],
+                'VAL_ADESAO': []
+                # 'comission_multas':[]
+            }
+        model_df = pd.DataFrame(data=schema_df)
         
-        CENTAVOS = Decimal('0.00')
+        TWO_PLACES = Decimal('0.00')
         for turma in df['TURMA'].unique():
             turma_df = df[df['TURMA'] == turma]
+            sum_comissao  =  Decimal(sum(turma_df['VAL_COMISSAO'])).quantize(TWO_PLACES)
+            sum_recebido  =  Decimal(sum(turma_df['VAL_RECEBIDO'])).quantize(TWO_PLACES)
+            sum_parcela   =  Decimal(sum(turma_df['VAL_PARCELA'])).quantize(TWO_PLACES)
+            sum_producao  =  Decimal(sum(turma_df['VAL_PRODUCAO'])).quantize(TWO_PLACES)
+            sum_multa     =  Decimal(sum(turma_df['VAL_MULTA'])).quantize(TWO_PLACES)
+            sum_descontos =  Decimal(sum(turma_df['VAL_DESCONTO'])).quantize(TWO_PLACES)
+            sum_adesao    =  Decimal(sum(turma_df['VAL_ADESAO'])).quantize(TWO_PLACES)
+            # sum_comission_multas = Decimal(sum(turma_df['comission_multas'])).quantize(TWO_PLACES)
             with localcontext() as ctx:
                 ctx.rounding = ROUND_HALF_DOWN
                 col_sum = {
-                    'TURMA': None,
-                    'TITULO': None,
-                    'VENCIMENTO': None,
                     'SACADO': 'TOTAL',
-                    'VAL_RECEBIDO':f"{Decimal(sum(turma_df['VAL_RECEBIDO'])).quantize(CENTAVOS)}".replace('.',','),
-                    'VAL_PARCELA': f"{Decimal(sum(turma_df['VAL_PARCELA'])).quantize(CENTAVOS)}".replace('.',','),
-                    'VAL_PRODUCAO': f"{Decimal(sum(turma_df['VAL_PRODUCAO'])).quantize(CENTAVOS)}".replace('.',','),
-                    'VAL_MULTA': f"{Decimal(sum(turma_df['VAL_MULTA'])).quantize(CENTAVOS)}".replace('.',','),
-                    'VAL_DESCONTO': f"{Decimal(sum(turma_df['VAL_DESCONTO'])).quantize(CENTAVOS)}".replace('.',','),
-                    'VAL_ADESAO': f"{Decimal(sum(turma_df['VAL_ADESAO'])).quantize(CENTAVOS)}".replace('.',','),
-                    'DATA_CREDITO':None,
+                    'VAL_COMISSAO': self._str_to_float(sum_comissao),
+                    'VAL_RECEBIDO': self._str_to_float(sum_recebido),
+                    'VAL_PARCELA': self._str_to_float(sum_parcela),
+                    'VAL_PRODUCAO': self._str_to_float(sum_producao),
+                    'VAL_MULTA': self._str_to_float(sum_multa),
+                    'VAL_DESCONTO': self._str_to_float(sum_descontos),
+                    'VAL_ADESAO': self._str_to_float(sum_adesao),
                 }
-            
             turma_df = turma_df.append(col_sum, ignore_index=True)
             model_df = model_df.append(turma_df, ignore_index=True)
+            date_line = {
+                    'TURMA': f"Periodo: {self.comission_date}",
+                    'VENCIMENTO': "R$"
+            }
+            model_df = model_df.append(date_line, ignore_index=True)
+
+            if turma in self.BUSINESS['TURMAS'] and len(self.BUSINESS['TURMAS'][turma].keys()) > 0:
+                with localcontext() as ctx:
+                    ctx.rounding = ROUND_HALF_DOWN
+                    for partner in self.BUSINESS['TURMAS'][turma].keys():
+                        comission_factor = Decimal(self.BUSINESS['TURMAS'][turma][partner])
+                        comission_line = {
+                            'TURMA': partner,
+                            'VENCIMENTO':self._str_to_float((Decimal(sum_comissao) * Decimal(comission_factor)).quantize(TWO_PLACES)),
+                        }
+                        model_df = model_df.append(comission_line, ignore_index=True)
             model_df = model_df.append(pd.Series(), ignore_index=True)
             model_df = model_df.append(header_df, ignore_index=True)
-        
-        model_df.drop(index=(len(model_df)-1),inplace=True)
+        # model_df.drop('comission_multas', axis=1, inplace=True)
+        model_df.drop(index=(len(model_df)-1), inplace=True)
         return model_df
 
     def incomes_table(self, df):
@@ -312,32 +375,36 @@ class DataEngineer:
         last line and below the column indicated by the keys.
         """
         sort_criteria = self.SETTINGS['sort_data']['incomes_table']
-        df = df.sort_values(by=['TURMA', sort_criteria])
-        CENTAVOS = Decimal('0.00')
+        model_df = df.sort_values(by=['TURMA', sort_criteria])
+        TWO_PLACES = Decimal('0.00')
+        sum_recebido  =  Decimal(sum(model_df['VAL_RECEBIDO'])).quantize(TWO_PLACES)
+        sum_parcela   =  Decimal(sum(model_df['VAL_PARCELA'])).quantize(TWO_PLACES)
+        sum_producao  =  Decimal(sum(model_df['VAL_PRODUCAO'])).quantize(TWO_PLACES)
+        sum_multa     =  Decimal(sum(model_df['VAL_MULTA'])).quantize(TWO_PLACES)
+        sum_descontos =  Decimal(sum(model_df['VAL_DESCONTO'])).quantize(TWO_PLACES)
+        sum_adesao    =  Decimal(sum(model_df['VAL_ADESAO'])).quantize(TWO_PLACES)
         with localcontext() as ctx:
             ctx.rounding = ROUND_HALF_DOWN
             col_sum = {
-                'TURMA': None,
-                'TITULO': None,
-                'VENCIMENTO': None,
-                'SACADO': 'TOTAL',
-                'VAL_RECEBIDO':f"{Decimal(sum(df['VAL_RECEBIDO'])).quantize(CENTAVOS)}".replace('.',','),
-                'VAL_PARCELA': f"{Decimal(sum(df['VAL_PARCELA'])).quantize(CENTAVOS)}".replace('.',','),
-                'VAL_PRODUCAO': f"{Decimal(sum(df['VAL_PRODUCAO'])).quantize(CENTAVOS)}".replace('.',','),
-                'VAL_MULTA': f"{Decimal(sum(df['VAL_MULTA'])).quantize(CENTAVOS)}".replace('.',','),
-                'VAL_DESCONTO': f"{Decimal(sum(df['VAL_DESCONTO'])).quantize(CENTAVOS)}".replace('.',','),
-                'VAL_ADESAO': f"{Decimal(sum(df['VAL_ADESAO'])).quantize(CENTAVOS)}".replace('.',','),
-                'DATA_CREDITO':None,
+                    'SACADO': 'TOTAL',
+                    'VAL_RECEBIDO': self._str_to_float(sum_recebido),
+                    'VAL_PARCELA': self._str_to_float(sum_parcela),
+                    'VAL_PRODUCAO': self._str_to_float(sum_producao),
+                    'VAL_MULTA': self._str_to_float(sum_multa),
+                    'VAL_DESCONTO': self._str_to_float(sum_descontos),
+                    'VAL_ADESAO': self._str_to_float(sum_adesao),
+                }
+            model_df = model_df.append(col_sum, ignore_index=True)
+            date_line = {
+                    'SACADO': f"Periodo: {self.comission_date}"
             }
-        return df.append(col_sum, ignore_index=True)
+            model_df = model_df.append(date_line, ignore_index=True)
+        return model_df
 
     def _format_table(self, df):
-
-        # if sort_criteria != '':
         sort_criteria = self.SETTINGS['sort_data']['incomes_table']
-        #     if sort_criteria == "VENCIMENTO" or "DATA_CREDITO":
         excel_format = df[sort_criteria].apply(
-            lambda value: f"{value.date().strftime('%d/%m/%Y')}" 
+            lambda value: f"{value.date().strftime(r'%d/%m/%Y')}" 
             if f"{type(value)}" == "<class 'pandas._libs.tslibs.timestamps.Timestamp'>"
             else value)
         df[sort_criteria] = excel_format
@@ -350,19 +417,19 @@ class DataEngineer:
                                                 font_size=10,
                                                 wrap_text=False,
                                                 shrink_to_fit=False))
-        sf.apply_style_by_indexes(indexes_to_style=sf[sf['SACADO'] == 'TOTAL'],styler_obj=Styler(bold=True, font_size=10))
+        sf.apply_style_by_indexes(indexes_to_style=sf[sf['SACADO'] == 'TOTAL'],styler_obj=Styler(font_size=10, bold=True))
         sf.apply_headers_style(styler_obj=Styler(bold=False,
                                                 bg_color=utils.colors.grey,
                                                 border_type=utils.borders.thin,
                                                 font_size=10,
                                                 wrap_text=False,
                                                 shrink_to_fit=False))
-        
         col_width = {
             'TURMA': 32,
             'TITULO': 8,
             'VENCIMENTO': 12,
             'SACADO': 34,
+            'VAL_COMISSAO': 12,
             'VAL_RECEBIDO':13.2,
             'VAL_PARCELA': 12,
             'VAL_PRODUCAO': 12,
@@ -374,20 +441,24 @@ class DataEngineer:
         sf.set_column_width_dict(col_width)
         return sf
 
-    def _export_excel(self, df):
+    def _export_excel(self, df, filename):
         """ Export the treated dataframe to a excel file """
-        #+ default_save_names = self.SETTINGS['default_save_name']['incomes_table']
         styled_table = self._format_table(df)
-        styled_table.to_excel('output.xlsx').save()
+        styled_table.to_excel(filename).save()
         
-    def run(self):
+    def run(self, export_comission=False, export_incomes=False):
         """ Main method to treat and export the data"""
         new_data = pd.DataFrame(data=self.apply_treatment())
-        # model = self.incomes_table(new_data)
-        model = self.comission_table(new_data)
-        self._export_excel(model)
+        if export_incomes is True:
+            income_table = self.incomes_table(new_data)
+            self._export_excel(income_table, f'receitas_{self.start_date.strftime("%d_%m_%Y")}_a_{self.end_date.strftime("%d_%m_%Y")}.xls')
+            self.app_warning = Warning(text='Arquivo gerado com sucesso', bg='white', fg='green')
+        if export_comission is True:
+            comission_table = self.comission_table(new_data)
+            self._export_excel(comission_table, f'comissao_{self.start_date.strftime("%d_%m_%Y")}_a_{self.end_date.strftime("%d_%m_%Y")}.xls')
+            self.app_warning = Warning(text='Arquivo gerado com sucesso', bg='white', fg='green')
 
-if __name__ == '__main__':
-    DataEngineer().run()
-    # DataEngineer().apply_treatment()
-    # DataEngineer()._regex_build()
+# if __name__ == "__main__":
+    # DataEngineer('comission_abril.XLS', "01/01/2019", "30/01/2019").run(export_comission=True, export_incomes=False)
+    # DataEngineer('comission_abril.XLS', "01/01/2019", "30/01/2019").apply_treatment()
+    
