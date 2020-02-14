@@ -120,6 +120,8 @@ class DataEngineer:
                 treated_valid.append(1)
                 
         return treated_valid
+    def is_dataset_right(self):
+        return list(self.dataset.columns) == self.SETTINGS["dataset_schema"]
 
     def get_non_match(self, pd_serie):
         """Select a value from a list that do not correspond a given regex"""

@@ -1,6 +1,8 @@
 {
     "extension":[".xls", ".XLS"],
     "dataset":"/home/dariodg/Desktop/free/Galpao/ComissionApp/docs/comissabril2019.XLS",
+    "dataset_schema":["turma", "titulo", "vencimento", "sacado", "recebido", "credito",
+        "descritivo"],
     "classification_patterns": {
         "adesao":"ADES",
         "producao": "PROD",
