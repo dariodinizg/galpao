@@ -2,7 +2,7 @@ import pandas as pd
 import json
 import re
 from decimal import Decimal, ROUND_HALF_DOWN, localcontext, ROUND_DOWN
-from StyleFrame import StyleFrame, Styler, utils
+from styleframe import StyleFrame, Styler, utils
 from datetime import datetime
 
 from config_manager import ConfigManager
